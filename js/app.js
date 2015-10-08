@@ -8,7 +8,7 @@ var Enemy = function(row, speed) {
     this.startingRow = row;
     this.speed = speed;
     this.x = 0;
-    this.y = row * 83.0;
+    this.y = row * 83 - 18;
     this.sprite = 'images/enemy-bug.png';
 };
 
@@ -21,7 +21,7 @@ Enemy.prototype.update = function(dt) {
     if (this.outOfBounds()) {
         // reset its position
         this.x = 0;
-        this.y = this.startingRow * 83.0;
+        this.y = this.startingRow * 83 - 18;
     }
     this.x += dt * this.speed;
 };
