@@ -33,7 +33,7 @@ Enemy.prototype.render = function() {
 
 // Check if the enemy is out of canvas' bounds
 Enemy.prototype.outOfBounds = function() {
-    if (this.x > ctx.canvas.width || this.y > ctx.canvas.height) {
+    if (this.x > ctx.canvas.width) {
         return true;
     }
 };
@@ -54,19 +54,25 @@ var Player = function() {
 };
 
 Player.prototype.update = function() {
-    var self = this;
     var movementSpeed = 2;
-    if (self.keyStates.left) {
-        self.x -= movementSpeed;
+    // The sprite height and width are currently hard-coded,
+    // they are not fetched from the image properties.
+    var spriteHeight = 101;
+    var spriteWidth = 171;
+    console.log(this.spriteHeight);
+    if (this.keyStates.left && this.x > 0) {
+        this.x -= movementSpeed;
     }
-    if (self.keyStates.up) {
-        self.y -= movementSpeed;
+    if (this.keyStates.up && this.y > 0) {
+        this.y -= movementSpeed;
     }
-    if (self.keyStates.right) {
-        self.x += movementSpeed;
+    if (this.keyStates.right &&
+        this.x < ctx.canvas.width - spriteHeight) {
+        this.x += movementSpeed;
     }
-    if (self.keyStates.down) {
-        self.y += movementSpeed;
+    if (this.keyStates.down &&
+        this.y < ctx.canvas.height - spriteWidth) {
+        this.y += movementSpeed;
     }
 };
 
