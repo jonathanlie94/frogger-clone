@@ -51,14 +51,14 @@ var Player = function() {
         'down': false
     };
     this.sprite = 'images/char-boy.png';
-};
-
-Player.prototype.update = function() {
-    var movementSpeed = 2;
     // The sprite height and width are currently hard-coded,
     // they are not fetched from the image properties.
     var spriteHeight = 101;
     var spriteWidth = 171;
+};
+
+Player.prototype.update = function() {
+    var movementSpeed = 2;
     console.log(this.spriteHeight);
     if (this.keyStates.left && this.x > 0) {
         this.x -= movementSpeed;
@@ -67,11 +67,11 @@ Player.prototype.update = function() {
         this.y -= movementSpeed;
     }
     if (this.keyStates.right &&
-        this.x < ctx.canvas.width - spriteHeight) {
+        this.x < ctx.canvas.width - this.spriteHeight) {
         this.x += movementSpeed;
     }
     if (this.keyStates.down &&
-        this.y < ctx.canvas.height - spriteWidth) {
+        this.y < ctx.canvas.height - this.spriteWidth) {
         this.y += movementSpeed;
     }
 };
