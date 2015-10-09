@@ -53,8 +53,8 @@ var Player = function() {
     this.sprite = 'images/char-boy.png';
     // The sprite height and width are currently hard-coded,
     // they are not fetched from the image properties.
-    var spriteHeight = 101;
-    var spriteWidth = 171;
+    this.spriteHeight = 171;
+    this.spriteWidth = 101;
 };
 
 Player.prototype.update = function() {
@@ -67,11 +67,11 @@ Player.prototype.update = function() {
         this.y -= movementSpeed;
     }
     if (this.keyStates.right &&
-        this.x < ctx.canvas.width - this.spriteHeight) {
+        this.x < ctx.canvas.width - this.spriteWidth) {
         this.x += movementSpeed;
     }
     if (this.keyStates.down &&
-        this.y < ctx.canvas.height - this.spriteWidth) {
+        this.y < ctx.canvas.height - this.spriteHeight) {
         this.y += movementSpeed;
     }
 };
