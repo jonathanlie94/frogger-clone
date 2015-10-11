@@ -112,7 +112,7 @@ var Engine = (function(global) {
             // 2. Return the intersection of the rectangle if so
             // 3. If any pixels are not transparent on both sides,
             // then collision occurs.
-            if (boxIntersects([player.x, player.y],
+            if (boxCollides([player.x, player.y],
                 [player.spriteWidth, player.spriteHeight],
                 [enemy.x, enemy.y],
                 [enemy.spriteWidth, enemy.spriteHeight])){
@@ -127,7 +127,7 @@ var Engine = (function(global) {
     /* This function is used by boxCollides() to check whether the
      * two boxes collide or not
      */
-    function rectIntersects(x, y, r, b, x2, y2, r2, b2) {
+    function rectCollides(x, y, r, b, x2, y2, r2, b2) {
         return !(r <= x2 || x > r2 ||
                  b <= y2 || y > b2);
     }
@@ -135,41 +135,45 @@ var Engine = (function(global) {
     /* This function return whether the bounding boxes of two images
      * collide with each other.
      */
-    function boxIntersects(pos, size, pos2, size2) {
-        return rectIntersects(pos[0], pos[1],
+    function boxCollides(pos, size, pos2, size2) {
+        return rectCollides(pos[0], pos[1],
                         pos[0] + size[0], pos[1] + size[1],
                         pos2[0], pos2[1],
                         pos2[0] + size2[0], pos2[1] + size2[1]);
     }
 
-    function collidesWith(unit1, unit2) {
-        var img1 = Resources.get(unit1.sprite);
-        var img2 = Resources.get(unit2.sprite);
+    /* This function checks whether two entities collide with each other.
+     * This function is used to check whether the player came in contact
+     * with other entities such as gems and enemies.
+     */
+    function collidesWith(entity1, unit2) {
+        var alphaThreshold = 128; // ~50% opacity value
 
         // Coordinates of the intersected rectangle
-        var unit1Pos = {
-            'x': Math.floor(unit1.x),
-            'y': Math.floor(unit1.y)
+        var entity1Pos = {
+            'x': Math.floor(entity1.x),
+            'y': Math.floor(entity1.y)
         };
-        var unit2Pos = {
-            'x': Math.floor(unit2.x),
-            'y': Math.floor(unit2.y)
+        var entity2Pos = {
+            'x': Math.floor(entity2.x),
+            'y': Math.floor(entity2.y)
         };
 
-        var minX = Math.max(unit1Pos.x, unit2Pos.x);
-        var minY = Math.min(unit1Pos.y, unit2Pos.y);
-        var maxX = Math.min(unit1Pos.x+unit1.spriteWidth, unit2Pos.x+unit2.spriteWidth);
-        var maxY = Math.max(unit1Pos.y+unit1.spriteHeight, unit2Pos.y+unit2.spriteHeight);
+        var minX = Math.max(entity1Pos.x, entity2Pos.x);
+        var minY = Math.min(entity1Pos.y, entity2Pos.y);
+        var maxX = Math.min(entity1Pos.x + entity1.spriteWidth,
+            entity2Pos.x + unit2.spriteWidth);
+        var maxY = Math.max(entity1Pos.y + entity1.spriteHeight,
+            entity2Pos.y + unit2.spriteHeight);
 
         try {
             var collisionMask1 = getCollisionMask(unit1, minX, minY, maxX, maxY);
             var collisionMask2 = getCollisionMask(unit2, minX, minY, maxX, maxY);
             for (var i = 0; i < collisionMask1.length; i ++){
-                if (collisionMask1[i] !== 0 && collisionMask2[i] !== 0) {
+                if (collisionMask1[i] >= alphaThreshold  && collisionMask2[i] >= alphaThreshold) {
                     return true;
                 }
             };
-
         }
         catch (e) {
             console.log(e.name + ': ' + e.message);
@@ -178,6 +182,8 @@ var Engine = (function(global) {
     }
 
     /*
+     * This function returns an array containing alpha channel values
+     * of the image data.
      *                   --------   (maxX, minY)
      *                  |        |
      *                  |        |
@@ -185,12 +191,14 @@ var Engine = (function(global) {
      */
     function getCollisionMask(unit, minX, minY, maxX, maxY) {
         var collisionMask = [];
+        // Create an off-screen canvas to redraw the image separately
         var cvs = doc.createElement('canvas');
         cvs.width = 505;
         cvs.height = 606;
         var ctx = cvs.getContext('2d');
         ctx.drawImage(Resources.get(unit.sprite), unit.x, unit.y);
         var imageData = ctx.getImageData(minX, minY, maxX-minX, maxY-minY);
+
         for (var x = 3; x < imageData.data.length; x += 4) {
             collisionMask.push(imageData.data[x]);
         };
