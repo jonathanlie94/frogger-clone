@@ -146,7 +146,7 @@ var Engine = (function(global) {
      * This function is used to check whether the player came in contact
      * with other entities such as gems and enemies.
      */
-    function collidesWith(entity1, unit2) {
+    function collidesWith(entity1, entity2) {
         var alphaThreshold = 128; // ~50% opacity value
 
         // Coordinates of the intersected rectangle
@@ -162,13 +162,13 @@ var Engine = (function(global) {
         var minX = Math.max(entity1Pos.x, entity2Pos.x);
         var minY = Math.min(entity1Pos.y, entity2Pos.y);
         var maxX = Math.min(entity1Pos.x + entity1.spriteWidth,
-            entity2Pos.x + unit2.spriteWidth);
+            entity2Pos.x + entity2.spriteWidth);
         var maxY = Math.max(entity1Pos.y + entity1.spriteHeight,
-            entity2Pos.y + unit2.spriteHeight);
+            entity2Pos.y + entity2.spriteHeight);
 
         try {
-            var collisionMask1 = getCollisionMask(unit1, minX, minY, maxX, maxY);
-            var collisionMask2 = getCollisionMask(unit2, minX, minY, maxX, maxY);
+            var collisionMask1 = getCollisionMask(entity1, minX, minY, maxX, maxY);
+            var collisionMask2 = getCollisionMask(entity2, minX, minY, maxX, maxY);
             for (var i = 0; i < collisionMask1.length; i ++){
                 if (collisionMask1[i] >= alphaThreshold  && collisionMask2[i] >= alphaThreshold) {
                     return true;
