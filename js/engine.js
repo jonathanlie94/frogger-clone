@@ -23,7 +23,8 @@ var Engine = (function(global) {
         win = global.window,
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
-        lastTime;
+        lastTime,
+        isGameOver = false;
 
     canvas.width = 505;
     canvas.height = 606;
@@ -56,7 +57,9 @@ var Engine = (function(global) {
         /* Use the browser's requestAnimationFrame function to call this
          * function again as soon as the browser is able to draw another frame.
          */
-        win.requestAnimationFrame(main);
+        if (isGameOver == false) {
+            win.requestAnimationFrame(main);
+        }
     }
 
     /* This function does some initial setup that should only occur once,
@@ -66,6 +69,11 @@ var Engine = (function(global) {
     function init() {
         reset();
         lastTime = Date.now();
+
+        var playerImg = Resources.get(player.sprite);
+        player.spriteHeight = playerImg.height;
+        player.spriteWidth = playerImg.width;
+
         main();
     }
 
@@ -80,7 +88,7 @@ var Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        // checkCollisions();
+        checkCollisions();
     }
 
     /* This is called by the update function  and loops through all of the
@@ -95,6 +103,99 @@ var Engine = (function(global) {
             enemy.update(dt);
         });
         player.update();
+    }
+
+    function checkCollisions() {
+        allEnemies.forEach(function(enemy) {
+            // Steps done to check whether collision occurs or not:
+            // 1. Check whether bounding box of two images collide
+            // 2. Return the intersection of the rectangle if so
+            // 3. If any pixels are not transparent on both sides,
+            // then collision occurs.
+            if (boxIntersects([player.x, player.y],
+                [player.spriteWidth, player.spriteHeight],
+                [enemy.x, enemy.y],
+                [enemy.spriteWidth, enemy.spriteHeight])){
+                if (collidesWith(player, enemy)){
+                    isGameOver = true;
+                    return;
+                }
+            }
+        });
+    }
+
+    /* This function is used by boxCollides() to check whether the
+     * two boxes collide or not
+     */
+    function rectIntersects(x, y, r, b, x2, y2, r2, b2) {
+        return !(r <= x2 || x > r2 ||
+                 b <= y2 || y > b2);
+    }
+
+    /* This function return whether the bounding boxes of two images
+     * collide with each other.
+     */
+    function boxIntersects(pos, size, pos2, size2) {
+        return rectIntersects(pos[0], pos[1],
+                        pos[0] + size[0], pos[1] + size[1],
+                        pos2[0], pos2[1],
+                        pos2[0] + size2[0], pos2[1] + size2[1]);
+    }
+
+    function collidesWith(unit1, unit2) {
+        var img1 = Resources.get(unit1.sprite);
+        var img2 = Resources.get(unit2.sprite);
+
+        // Coordinates of the intersected rectangle
+        var unit1Pos = {
+            'x': Math.floor(unit1.x),
+            'y': Math.floor(unit1.y)
+        };
+        var unit2Pos = {
+            'x': Math.floor(unit2.x),
+            'y': Math.floor(unit2.y)
+        };
+
+        var minX = Math.max(unit1Pos.x, unit2Pos.x);
+        var minY = Math.min(unit1Pos.y, unit2Pos.y);
+        var maxX = Math.min(unit1Pos.x+unit1.spriteWidth, unit2Pos.x+unit2.spriteWidth);
+        var maxY = Math.max(unit1Pos.y+unit1.spriteHeight, unit2Pos.y+unit2.spriteHeight);
+
+        try {
+            var collisionMask1 = getCollisionMask(unit1, minX, minY, maxX, maxY);
+            var collisionMask2 = getCollisionMask(unit2, minX, minY, maxX, maxY);
+            for (var i = 0; i < collisionMask1.length; i ++){
+                if (collisionMask1[i] !== 0 && collisionMask2[i] !== 0) {
+                    return true;
+                }
+            };
+
+        }
+        catch (e) {
+            console.log(e.name + ': ' + e.message);
+        }
+        return false;
+    }
+
+    /*
+     *                   --------   (maxX, minY)
+     *                  |        |
+     *                  |        |
+     *  (minX, maxY)     --------
+     */
+    function getCollisionMask(unit, minX, minY, maxX, maxY) {
+        var collisionMask = [];
+        var cvs = doc.createElement('canvas');
+        cvs.width = 505;
+        cvs.height = 606;
+        var ctx = cvs.getContext('2d');
+        ctx.drawImage(Resources.get(unit.sprite), unit.x, unit.y);
+        var imageData = ctx.getImageData(minX, minY, maxX-minX, maxY-minY);
+        for (var x = 3; x < imageData.data.length; x += 4) {
+            collisionMask.push(imageData.data[x]);
+        };
+
+        return collisionMask;
     }
 
     /* This function initially draws the "game level", it will then call
@@ -113,7 +214,7 @@ var Engine = (function(global) {
                 'images/stone-block.png',   // Row 2 of 3 of stone
                 'images/stone-block.png',   // Row 3 of 3 of stone
                 'images/grass-block.png',   // Row 1 of 2 of grass
-                'images/grass-block.png'    // Row 2 of 2 of grass
+                'images/grass-block.png',   // Row 2 of 2 of grass
             ],
             numRows = 6,
             numCols = 5,

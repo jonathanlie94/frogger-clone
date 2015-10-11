@@ -10,6 +10,8 @@ var Enemy = function(row, speed) {
     this.x = 0;
     this.y = row * 83 - 18;
     this.sprite = 'images/enemy-bug.png';
+    this.spriteHeight = 101;
+    this.spriteWidth = 171;
 };
 
 // Update the enemy's position, required method for game
@@ -42,8 +44,8 @@ Enemy.prototype.outOfBounds = function() {
 // This class requires an update(), render() and
 // a handleInput() method.
 var Player = function() {
-    this.x = 2 * 101.0;
-    this.y = 5 * 83.0;
+    this.x = 2 * 101;
+    this.y = 5 * 83;
     this.keyStates = {
         'left': false,
         'up': false,
@@ -51,15 +53,10 @@ var Player = function() {
         'down': false
     };
     this.sprite = 'images/char-boy.png';
-    // The sprite height and width are currently hard-coded,
-    // they are not fetched from the image properties.
-    this.spriteHeight = 171;
-    this.spriteWidth = 101;
 };
 
 Player.prototype.update = function() {
     var movementSpeed = 2;
-    console.log(this.spriteHeight);
     if (this.keyStates.left && this.x > 0) {
         this.x -= movementSpeed;
     }
@@ -99,7 +96,6 @@ var enemy3 = new Enemy(3, 200);
 var allEnemies = [enemy1, enemy2, enemy3];
 
 var player = new Player();
-//ctx.addEventListener('click', player.handleInput, false);
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
