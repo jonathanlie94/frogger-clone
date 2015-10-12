@@ -2,22 +2,27 @@
 <html>
 <head>
     <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=no">
     <title>Effective JavaScript: Frogger</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 	<script src="js/jQuery.js"></script>
     <script src="js/resources.js"></script>
+    <script src="js/collisionChecker.js"></script>
     <script src="js/app.js"></script>
     <script src="js/engine.js"></script>
     <div id="character-selection">
     	<p>Choose your character</p>
-    	<form id="character-selection-form">
-	    	<input type="radio" name="character" value="boy">Boy
+    	<form id="configuration-form">
+	    	<input type="radio" name="character" value="boy" checked="true">Boy
 	    	<input type="radio" name="character" value="cat-girl">Cat Girl
 	    	<input type="radio" name="character" value="horn-girl">Horn Girl
 	    	<input type="radio" name="character" value="pink-girl">Pink Girl
 	    	<input type="radio" name="character" value="princess-girl">Princess Girl
+	    	<input type="radio" name="difficulty" value="easy" checked="true">Easy
+	    	<input type="radio" name="difficulty" value="normal">Normal
+	    	<input type="radio" name="difficulty" value="hard">Hard
 	    </form>
 	    <button id="start-button">Start</button>
 	</div>

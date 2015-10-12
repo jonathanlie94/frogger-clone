@@ -26,8 +26,8 @@ var Engine = (function(global) {
         lastTime,
         isGameOver = false;
 
-    canvas.width = 505;
-    canvas.height = 606;
+    canvas.width = 808;
+    canvas.height = 909;
     doc.body.appendChild(canvas);
 
     /* This function serves as the kickoff point for the game loop itself
@@ -67,13 +67,21 @@ var Engine = (function(global) {
      * game loop.
      */
     function init() {
+        document.querySelector('#start-button').addEventListener('click', startGame,
+        false);
+    }
+
+    /* Starts the game.
+     *
+     */
+    function startGame() {
+        player.setupSprite($('input[name="character"]:checked').val());
+        player.initProperties($('input[name="difficulty"]:checked').val());
+        allObjects.forEach(function(object){
+            object.setupSprite();
+        });
         reset();
         lastTime = Date.now();
-
-        var playerImg = Resources.get(player.sprite);
-        player.spriteHeight = playerImg.height;
-        player.spriteWidth = playerImg.width;
-
         main();
     }
 
@@ -88,7 +96,9 @@ var Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        checkCollisions();
+        checkEnemyCollisions();
+        checkPickableCollisions();
+        updateStats();
     }
 
     /* This is called by the update function  and loops through all of the
@@ -102,21 +112,34 @@ var Engine = (function(global) {
         allEnemies.forEach(function(enemy) {
             enemy.update(dt);
         });
-        player.update();
+        //allObjects.forEach(function(object) {
+        //    object.update();
+        //});
+       player.update();
     }
 
-    function checkCollisions() {
+    function updateStats() {
+        // Text attributes
+        ctx.font = '24pt roboto';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = 'black';
+        ctx.clearRect(0,0,canvas.width,50);
+        ctx.fillText('Lives: ' + player.lives, 0, 40);
+        ctx.fillText('Score: ' + player.score, canvas.width / 2, 40);
+    }
+
+    function checkEnemyCollisions() {
         allEnemies.forEach(function(enemy) {
             // Steps done to check whether collision occurs or not:
             // 1. Check whether bounding box of two images collide
             // 2. Return the intersection of the rectangle if so
             // 3. If any pixels are not transparent on both sides,
             // then collision occurs.
-            if (boxCollides([player.x, player.y],
+            if (CollisionChecker.boxCollides([player.x, player.y],
                 [player.spriteWidth, player.spriteHeight],
                 [enemy.x, enemy.y],
                 [enemy.spriteWidth, enemy.spriteHeight])){
-                if (collidesWith(player, enemy)){
+                if (CollisionChecker.collidesWith(player, enemy)){
                     isGameOver = true;
                     return;
                 }
@@ -124,86 +147,21 @@ var Engine = (function(global) {
         });
     }
 
-    /* This function is used by boxCollides() to check whether the
-     * two boxes collide or not
-     */
-    function rectCollides(x, y, r, b, x2, y2, r2, b2) {
-        return !(r <= x2 || x > r2 ||
-                 b <= y2 || y > b2);
-    }
-
-    /* This function return whether the bounding boxes of two images
-     * collide with each other.
-     */
-    function boxCollides(pos, size, pos2, size2) {
-        return rectCollides(pos[0], pos[1],
-                        pos[0] + size[0], pos[1] + size[1],
-                        pos2[0], pos2[1],
-                        pos2[0] + size2[0], pos2[1] + size2[1]);
-    }
-
-    /* This function checks whether two entities collide with each other.
-     * This function is used to check whether the player came in contact
-     * with other entities such as gems and enemies.
-     */
-    function collidesWith(entity1, entity2) {
-        var alphaThreshold = 128; // ~50% opacity value
-
-        // Coordinates of the intersected rectangle
-        var entity1Pos = {
-            'x': Math.floor(entity1.x),
-            'y': Math.floor(entity1.y)
-        };
-        var entity2Pos = {
-            'x': Math.floor(entity2.x),
-            'y': Math.floor(entity2.y)
-        };
-
-        var minX = Math.max(entity1Pos.x, entity2Pos.x);
-        var minY = Math.min(entity1Pos.y, entity2Pos.y);
-        var maxX = Math.min(entity1Pos.x + entity1.spriteWidth,
-            entity2Pos.x + entity2.spriteWidth);
-        var maxY = Math.max(entity1Pos.y + entity1.spriteHeight,
-            entity2Pos.y + entity2.spriteHeight);
-
-        try {
-            var collisionMask1 = getCollisionMask(entity1, minX, minY, maxX, maxY);
-            var collisionMask2 = getCollisionMask(entity2, minX, minY, maxX, maxY);
-            for (var i = 0; i < collisionMask1.length; i ++){
-                if (collisionMask1[i] >= alphaThreshold  && collisionMask2[i] >= alphaThreshold) {
-                    return true;
+    function checkPickableCollisions() {
+        // If player reaches water then they win
+        if (player.y <= 0 && player.isGoalReachable) {
+            isGameOver = true;
+        }
+        allObjects.forEach(function(object){
+            if (object.isPickable && CollisionChecker.boxCollides([player.x, player.y],
+                [player.spriteWidth, player.spriteHeight],
+                [object.x, object.y],
+                [object.spriteWidth, object.spriteHeight])){
+                if (CollisionChecker.collidesWith(player, object)){
+                    object.handleCollision(player);
                 }
-            };
-        }
-        catch (e) {
-            console.log(e.name + ': ' + e.message);
-        }
-        return false;
-    }
-
-    /*
-     * This function returns an array containing alpha channel values
-     * of the image data.
-     *                   --------   (maxX, minY)
-     *                  |        |
-     *                  |        |
-     *  (minX, maxY)     --------
-     */
-    function getCollisionMask(unit, minX, minY, maxX, maxY) {
-        var collisionMask = [];
-        // Create an off-screen canvas to redraw the image separately
-        var cvs = doc.createElement('canvas');
-        cvs.width = 505;
-        cvs.height = 606;
-        var ctx = cvs.getContext('2d');
-        ctx.drawImage(Resources.get(unit.sprite), unit.x, unit.y);
-        var imageData = ctx.getImageData(minX, minY, maxX-minX, maxY-minY);
-
-        for (var x = 3; x < imageData.data.length; x += 4) {
-            collisionMask.push(imageData.data[x]);
-        };
-
-        return collisionMask;
+            }
+        });
     }
 
     /* This function initially draws the "game level", it will then call
@@ -218,14 +176,17 @@ var Engine = (function(global) {
          */
         var rowImages = [
                 'images/water-block.png',   // Top row is water
-                'images/stone-block.png',   // Row 1 of 3 of stone
-                'images/stone-block.png',   // Row 2 of 3 of stone
-                'images/stone-block.png',   // Row 3 of 3 of stone
-                'images/grass-block.png',   // Row 1 of 2 of grass
-                'images/grass-block.png',   // Row 2 of 2 of grass
+                'images/stone-block.png',   // Row 1 of 5 of stone
+                'images/stone-block.png',   // Row 2 of 5 of stone
+                'images/stone-block.png',   // Row 3 of 5 of stone
+                'images/stone-block.png',   // Row 4 of 5 of stone
+                'images/stone-block.png',   // Row 5 of 5 of stone
+                'images/grass-block.png',   // Row 1 of 3 of grass
+                'images/grass-block.png',   // Row 2 of 3 of grass
+                'images/grass-block.png',   // Row 3 of 3 of grass
             ],
-            numRows = 6,
-            numCols = 5,
+            numRows = 9,
+            numCols = 8,
             row, col;
 
         /* Loop through the number of rows and columns we've defined above
@@ -260,6 +221,9 @@ var Engine = (function(global) {
         allEnemies.forEach(function(enemy) {
             enemy.render();
         });
+        allObjects.forEach(function(object) {
+            object.render();
+        });
 
         player.render();
     }
@@ -281,7 +245,17 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/char-cat-girl.png',
+        'images/char-horn-girl.png',
+        'images/char-pink-girl.png',
+        'images/char-princess-girl.png',
+        'images/gem-blue.png',
+        'images/gem-orange.png',
+        'images/gem-green.png',
+        'images/heart.png',
+        'images/key.png',
+        'images/rock.png'
     ]);
     Resources.onReady(init);
 
