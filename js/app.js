@@ -8,7 +8,7 @@ var Enemy = function(row, speed) {
     this.startingRow = row;
     this.speed = speed;
     this.x = 0;
-    this.y = row * 83 - 18;
+    this.y = row * 83 + 18
     this.sprite = 'images/enemy-bug.png';
     this.spriteHeight = 101;
     this.spriteWidth = 171;
@@ -23,7 +23,7 @@ Enemy.prototype.update = function(dt) {
     if (this.outOfBounds()) {
         // reset its position
         this.x = 0;
-        this.y = this.startingRow * 83 - 18;
+        this.y = this.startingRow * 83 + 18;
     }
     this.x += dt * this.speed;
 };
@@ -111,8 +111,11 @@ Player.prototype.move = function(direction) {
     }
 };
 
+/* This function determines whether the player will collide if
+ * it moves to the direction passed in the parameter.
+ */
 Player.prototype.collidesWithBlockers = function(direction) {
-    var self = this;
+    var _this = this;
     var ret = false;
     var previousX = this.x;
     var previousY = this.y;
@@ -134,23 +137,28 @@ Player.prototype.collidesWithBlockers = function(direction) {
     }
     allObjects.forEach(function(object){
         if (!object.isPickable && CollisionChecker.boxCollides([futureX, futureY],
-                [self.spriteWidth, self.spriteHeight],
-                [object.x, object.y],
-                [object.spriteWidth, object.spriteHeight])) {
-                self.x = futureX;
-                self.y = futureY;
-                if (CollisionChecker.collidesWith(self, object)) {
-                    ret = true;
-                }
-                self.x = previousX;
-                self.y = previousY;
+            [_this.spriteWidth, _this.spriteHeight],
+            [object.x, object.y],
+            [object.spriteWidth, object.spriteHeight])) {
+            _this.x = futureX;
+            _this.y = futureY;
+            if (CollisionChecker.collidesWith(_this, object)) {
+                ret = true;
             }
+            _this.x = previousX;
+            _this.y = previousY;
+        }
     });
     return ret;
 };
 
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
+
+Player.prototype.resetPos = function() {
+    this.x = 4 * 101;
+    this.y = 8 * 83;
 };
 
 Player.prototype.handleInput = function(eventType, keyCode) {
@@ -164,7 +172,7 @@ Player.prototype.handleInput = function(eventType, keyCode) {
 };
 
 Player.prototype.setupSprite = function(spriteName) {
-    this.sprite = 'images/char-' + spriteName + '.png';
+    this.sprite = 'images/' + spriteName + '.png';
     var playerImg = Resources.get(this.sprite);
     this.spriteHeight = playerImg.height;
     this.spriteWidth = playerImg.width;
@@ -243,9 +251,6 @@ var Rock = function(row, column) {
 Rock.prototype = Object.create(InGameObject.prototype);
 Rock.prototype.constructor = Rock;
 
-Rock.prototype.handleCollision = function(player) {
-}
-
 /* Hearts give players extra lives when picked up.
  */
 var Heart = function(row, column) {
@@ -262,17 +267,46 @@ Heart.prototype.handleCollision = function(player) {
     player.lives ++;
 }
 
+var GameInitializer = function() {
+
+};
+
+
+
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 
-/*
+// These lists define the options to be displayed in the menu.
+// For character list, the corresponding image must also be laoded beforehand.
+var characterList = ['char-boy',
+    'char-cat-girl',
+    'char-horn-girl',
+    'char-pink-girl',
+    'char-princess-girl'
+];
+
+var difficultyList = ['Easy',
+    'Normal',
+    'Hard'
+];
+
+var allEnemies = [],
+    allButtons = [],
+    allCharacters = [],
+    allDifficulties = [];
+
 var enemy1 = new Enemy(1, 100);
 var enemy2 = new Enemy(2, 50);
 var enemy3 = new Enemy(3, 200);
-var allEnemies = [enemy1, enemy2, enemy3];
-*/
-var allEnemies = [];
+var enemy4 = new Enemy(4, 300);
+var enemy5 = new Enemy(5, 400);
+allEnemies.push(enemy1);
+allEnemies.push(enemy2);
+allEnemies.push(enemy3);
+allEnemies.push(enemy4);
+allEnemies.push(enemy5);
+
 var player = new Player();
 
 var heart1  = new Heart(1,2);

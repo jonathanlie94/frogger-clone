@@ -1,3 +1,25 @@
 body {
     text-align: center;
 }
+
+#character-selection {
+	display: inline-block;
+}
+
+.wrapper {
+  width: 480px;
+  height: 540px;
+  margin: 0 0;
+}
+
+canvas {
+  top: 0;
+  left: 0;
+  border: 1px solid black;
+  z-index: 1;
+  width: 480px;
+  height: 540px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
