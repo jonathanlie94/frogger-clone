@@ -1,29 +1,37 @@
+// Singleton state controller for shared state
+var StateController = function() {
+    if (StateController.prototype._singletonInstance) {
+        return StateController.prototype._singletonInstance;
+    }
+
+    StateController.prototype._singletonInstance = this;
+    var _state = 'menu';
+
+    this.setState = function(state) {
+        _state = state;
+    };
+
+    this.getState = function() {
+        return _state;
+    };
+};
+
 // Enemies our player must avoid
 var Enemy = function(row, speed) {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
-
-    // The image/sprite for our enemies, this uses
-    // a helper we've provided to easily load images
     this.startingRow = row;
     this.speed = speed;
-    this.x = 0;
-    this.y = row * 83 + 18
+    this.x = -101;
+    this.y = (row - 1) * 83 + 18;
     this.sprite = 'images/enemy-bug.png';
-    this.spriteHeight = 101;
-    this.spriteWidth = 171;
 };
 
 // Update the enemy's position, required method for game
 // Parameter: dt, a time delta between ticks
 Enemy.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
-    if (this.outOfBounds()) {
+    if (this.x > ctx.canvas.width) {
         // reset its position
-        this.x = 0;
-        this.y = this.startingRow * 83 + 18;
+        this.x = -101;
+        this.y = (this.startingRow - 1) * 83 + 18;
     }
     this.x += dt * this.speed;
 };
@@ -33,18 +41,26 @@ Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-// Check if the enemy is out of canvas' bounds
-Enemy.prototype.outOfBounds = function() {
-    if (this.x > ctx.canvas.width) {
-        return true;
-    }
+Enemy.prototype.setupSpriteParam = function() {
+    var enemyImg = Resources.get(this.sprite);
+    this.spriteHeight = enemyImg.height;
+    this.spriteWidth = enemyImg.width;
 };
+
 
 // Now write your own player class
 // This class requires an update(), render() and
 // a handleInput() method.
 var Player = function() {
-    this.x = 4 * 101;
+    if (Player.prototype._singletonInstance) {
+        return Player.prototype._singletonInstance;
+    }
+
+    Player.prototype._singletonInstance = this;
+    var _isGoalReachable = false;
+    var _score = 0;
+
+    this.x = 3 * 101;
     this.y = 8 * 83;
     this.keyStates = {
         'left': false,
@@ -52,25 +68,26 @@ var Player = function() {
         'right': false,
         'down': false
     };
-    this.score = 0;
-    this.isGoalReachable = false;
-};
 
-Player.prototype.initProperties = function(difficulty) {
-    switch (difficulty) {
-        case 'easy':
-            this.lives = 6;
-            this.movementSpeed = 4;
-            break;
-        case 'normal':
-            this.lives = 4;
-            this.movementSpeed = 3;
-            break;
-        case 'hard':
-            this.lives = 2;
-            this.movementSpeed = 2;
-            break;
-    }
+    this.resetScore = function() {
+        _score = 0;
+    };
+
+    this.getScore = function() {
+        return _score;
+    };
+
+    this.addScore = function(score) {
+        _score += score;
+    };
+
+    this.getGoalReachable = function() {
+        return _isGoalReachable;
+    };
+
+    this.setGoalReachable = function(isGoalReachable) {
+        _isGoalReachable = isGoalReachable;
+    };
 };
 
 Player.prototype.update = function() {
@@ -109,6 +126,14 @@ Player.prototype.move = function(direction) {
             this.y += this.movementSpeed;
             break;
     }
+};
+
+
+Player.prototype.setupSprite = function(spriteName) {
+    this.sprite = 'images/' + spriteName + '.png';
+    var playerImg = Resources.get(this.sprite);
+    this.spriteHeight = playerImg.height;
+    this.spriteWidth = playerImg.width;
 };
 
 /* This function determines whether the player will collide if
@@ -161,6 +186,23 @@ Player.prototype.resetPos = function() {
     this.y = 8 * 83;
 };
 
+Player.prototype.initProperties = function(difficulty) {
+    switch (difficulty) {
+        case 'easy':
+            this.lives = 6;
+            this.movementSpeed = 5;
+            break;
+        case 'normal':
+            this.lives = 4;
+            this.movementSpeed = 4;
+            break;
+        case 'hard':
+            this.lives = 3;
+            this.movementSpeed = 4;
+            break;
+    }
+};
+
 Player.prototype.handleInput = function(eventType, keyCode) {
     if (eventType === 'keydown') {
         this.keyStates[keyCode] = true;
@@ -171,42 +213,35 @@ Player.prototype.handleInput = function(eventType, keyCode) {
     }
 };
 
-Player.prototype.setupSprite = function(spriteName) {
-    this.sprite = 'images/' + spriteName + '.png';
-    var playerImg = Resources.get(this.sprite);
-    this.spriteHeight = playerImg.height;
-    this.spriteWidth = playerImg.width;
-};
-
 /* A superclass for all in-game objects such as gems, keys.
  */
-var InGameObject = function(row, column) {
+var InGameObject = function(column, row) {
     this.visible = true;
     this.isPickable = true;
+    this.column = column ;
     this.row = row;
-    this.column = column;
-    this.x = row * 101;
-    this.y = row * 83;
-};
-
-InGameObject.prototype.setupSprite = function() {
-    var spriteImg = Resources.get(this.sprite);
-    this.spriteHeight = spriteImg.height;
-    this.spriteWidth = spriteImg.width;
+    this.x = (column - 1) * 101;
+    this.y = (row - 1) * 83 + 18;
 };
 
 InGameObject.prototype.render = function() {
     if (this.visible) {
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     }
-}
+};
+
+InGameObject.prototype.setupSpriteParam = function() {
+    var spriteImg = Resources.get(this.sprite);
+    this.spriteHeight = spriteImg.height;
+    this.spriteWidth = spriteImg.width;
+};
 
 /* Gems give player extra score when picked up.
  * colorNum: 1=blue, 2=orange, 3=green
  * Blue: 5000, Orange: 2000, Green: 500
  */
-var Gem = function(row, column, colorNum) {
-    InGameObject.call(this, row, column);
+var Gem = function(column, row, colorNum) {
+    InGameObject.call(this, column, row);
     var colorMap = {
         1: {'name': 'blue', 'score': 5000},
         2: {'name': 'orange', 'score': 2000},
@@ -220,15 +255,17 @@ Gem.prototype.constructor = Gem;
 
 Gem.prototype.handleCollision = function(player) {
     this.visible = false;
-    player.score += this.score;
-    this.spriteHeight = 1;
-    this.spriteWidth = 1;
+    player.addScore(this.score);
+    var index = allObjects.indexOf(this);
+    if (index > -1) {
+        allObjects.splice(index, 1);
+    }
 }
 
 /* Keys must be picked up before players can proceed to goal.
  */
-var Key = function(row, column) {
-    InGameObject.call(this, row, column);
+var Key = function(column, row) {
+    InGameObject.call(this, column, row);
     this.sprite = 'images/key.png';
 };
 Key.prototype = Object.create(InGameObject.prototype);
@@ -236,15 +273,17 @@ Key.prototype.constructor = Key;
 
 Key.prototype.handleCollision = function(player) {
     this.visible = false;
-    player.isGoalReachable = true;
-    this.spriteHeight = 1;
-    this.spriteWidth = 1;
-}
+    player.setGoalReachable(true);
+    var index = allObjects.indexOf(this);
+    if (index > -1) {
+        allObjects.splice(index, 1);
+    }
+};
 
 /* Rocks are purely obstacles that player cannot pass through.
  */
-var Rock = function(row, column) {
-    InGameObject.call(this, row, column);
+var Rock = function(column, row) {
+    InGameObject.call(this, column, row);
     this.sprite = 'images/rock.png';
     this.isPickable = false;
 }
@@ -253,8 +292,8 @@ Rock.prototype.constructor = Rock;
 
 /* Hearts give players extra lives when picked up.
  */
-var Heart = function(row, column) {
-    InGameObject.call(this, row, column);
+var Heart = function(column, row) {
+    InGameObject.call(this, column, row);
     this.sprite = 'images/heart.png';
 }
 Heart.prototype = Object.create(InGameObject.prototype);
@@ -262,15 +301,121 @@ Heart.prototype.constructor = Heart;
 
 Heart.prototype.handleCollision = function(player) {
     this.visible = false;
-    this.spriteHeight = 1;
-    this.spriteWidth = 1;
     player.lives ++;
+    var index = allObjects.indexOf(this);
+    if (index > -1) {
+        allObjects.splice(index, 1);
+    }
 }
 
-var GameInitializer = function() {
-
+var GameRandomizer = function() {
+    this.difficulty = 'easy';
+    this.level = 1;
 };
 
+GameRandomizer.prototype.setDifficulty = function(difficulty) {
+    this.difficulty = difficulty;
+};
+
+GameRandomizer.prototype.randomize = function() {
+    allEnemies.length = 0;
+    allObjects.length = 0;
+    var enemyCount, heartCount, rockCount, gemCount;
+    var colLength = 8;
+    var rowLength = 10;
+    var occupied = [];
+    for (var i = 0; i < colLength; i++) {
+        occupied[i] = [];
+        for(var j = 0; j < rowLength; j++) {
+            occupied[i][j] = false;
+        }
+    }
+
+    switch (this.difficulty) {
+        case 'easy':
+            enemyCount = 4;
+            heartCount = 3;
+            rockCount = 0;
+            gemCount = 2;
+            break;
+        case 'normal':
+            enemyCount = 6;
+            heartCount = 2;
+            rockCount = 1;
+            gemCount = 3;
+            break;
+        case 'hard':
+            enemyCount = 8;
+            heartCount = 1;
+            rockCount = 2;
+            gemCount = 4;
+            break;
+    }
+
+    // Scale the counts as level goes up
+    enemyCount += this.level % 4;
+    rockCount += this.level % 10;
+    gemCount += this.level % 3;
+
+    // Randomize enemies
+    for (var i = 0; i < enemyCount; i++) {
+        var row = Math.floor(Math.random() * 5) + 2;
+        var speed = Math.random() * 350 + 50;
+        var enemy = new Enemy(row, speed);
+        allEnemies.push(enemy);
+    }
+
+    // Randomize hearts
+    for (var i = 0; i < heartCount; i++) {
+        var col, row;
+        do {
+            col = Math.floor(Math.random() * 5) + 1;
+            row = Math.floor(Math.random() * 5) + 2;
+        } while (occupied[col - 1][row - 1]);
+        occupied[col - 1][row - 1] = true;
+
+        var heart = new Heart(col, row);
+        allObjects.push(heart);
+    }
+
+    // Randomize rocks
+    for (var i = 0; i < rockCount; i++) {
+        var col, row;
+        do {
+            col = Math.floor(Math.random() * 5) + 1;
+            row = Math.floor(Math.random() * 5) + 2;
+        } while (occupied[col - 1][row - 1]);
+        occupied[col - 1][row - 1] = true;
+
+        var rock = new Rock(col, row);
+        allObjects.push(rock);
+    }
+
+    // Randomize gems
+    for (var i = 0; i < gemCount; i++) {
+        var col, row;
+        do {
+            col = Math.floor(Math.random() * 5) + 1;
+            row = Math.floor(Math.random() * 6) + 2;
+        } while (occupied[col - 1][row - 1]);
+        occupied[col - 1][row - 1] = true;
+        var colorNum = Math.floor(Math.random() * 2 + 1);
+
+        var gem = new Gem(col, row, colorNum);
+        allObjects.push(gem);
+    }
+
+    // Randomize key
+    var col, row;
+    do {
+        col = Math.floor(Math.random() * 5) + 1;
+        row = Math.floor(Math.random() * 5) + 2;
+    } while (occupied[col - 1][row - 1]);
+    occupied[col - 1][row - 1] = true;
+
+    var key = new Key(col, row);
+    allObjects.push(key);
+}
 
 
 // Now instantiate your objects.
@@ -292,28 +437,18 @@ var difficultyList = ['Easy',
 ];
 
 var allEnemies = [],
-    allButtons = [],
+    allMenuScreenButtons = [],
+    allRetryScreenButtons = [],
+    allNextLevelScreenButtons = [],
+    allPauseScreenButtons = [],
+    allGameScreenButtons = [],
     allCharacters = [],
-    allDifficulties = [];
+    allDifficulties = [],
+    allObjects = [];
 
-var enemy1 = new Enemy(1, 100);
-var enemy2 = new Enemy(2, 50);
-var enemy3 = new Enemy(3, 200);
-var enemy4 = new Enemy(4, 300);
-var enemy5 = new Enemy(5, 400);
-allEnemies.push(enemy1);
-allEnemies.push(enemy2);
-allEnemies.push(enemy3);
-allEnemies.push(enemy4);
-allEnemies.push(enemy5);
-
+var randomizer = new GameRandomizer();
+var stateController = new StateController();
 var player = new Player();
-
-var heart1  = new Heart(1,2);
-var rock1   = new Rock(2,3);
-var gem1    = new Gem(3,4,1);
-var key     = new Key(4,4);
-var allObjects = [heart1, rock1, gem1, key];
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.

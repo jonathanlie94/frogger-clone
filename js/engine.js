@@ -2,16 +2,6 @@
  * This file provides the game loop functionality (update entities and render),
  * renders the initial game board on the screen, and then calls the update and
  * render methods on your player and enemy objects (defined in your app.js).
- *
- * A game engine works by rendering the entire game screen over and over, kind of
- * like a flipbook you may have created as a kid. When your player moves across
- * the screen, it may look like just that image/character is moving or being
- * rendern but that is not the case. What's really happening is the entire "scene"
- * is being rendern over and over, presenting the illusion of animation.
- *
- * This engine is available globally via the Engine variable and it also makes
- * the canvas' context (ctx) object globally available to make writing app.js
- * a little simpler to work with.
  */
 
 var Engine = (function(global) {
@@ -29,8 +19,7 @@ var Engine = (function(global) {
             x: 0,
             y: 0
         },
-        scalingFactor = 480.0 / 808.0,
-        state = 'menu'; // states available: menu, retry, nextLevel, game, pause
+        scalingFactor = 480.0 / 808.0;
 
     canvas.width = 808;
     canvas.height = 909;
@@ -56,36 +45,41 @@ var Engine = (function(global) {
      * and handles properly calling the update and render methods.
      */
     function main() {
-        /* Get our time delta information which is required if your game
-         * requires smooth animation. Because everyone's computer processes
-         * instructions at different speeds we need a constant value that
-         * would be the same for everyone (regardless of how fast their
-         * computer is) - hurray time!
-         */
         var now = Date.now(),
             dt = (now - lastTime) / 1000.0;
 
+        var state = stateController.getState();
         switch (state) {
             case 'game':
-                update(dt);
-                render();
+                updateGame(dt);
+                renderGame();
                 break;
             case 'menu':
-                updateMenu();
-                renderMenu();
+                updateMainMenu();
+                renderMainMenu();
                 break;
             case 'retry':
+                updateRetryMenu();
+                renderRetryMenu();
                 break;
             case 'nextLevel':
+                updateNextLevelMenu();
+                renderNextLevelMenu();
                 break;
             case 'pause':
+                updatePauseMenu();
+                renderPauseMenu();
                 break;
         }
 
         lastTime = now;
+        requestAnimFrame(main);
 
-        if (player.lives != 0) {
-            requestAnimFrame(main);
+        if (player.lives == 0) {
+            stateController.setState('retry');
+        }
+        if (player.y <= 40 && player.getGoalReachable()) {
+            stateController.setState('nextLevel');
         }
     }
 
@@ -95,7 +89,11 @@ var Engine = (function(global) {
      */
     function init() {
         initCanvasEvents();
-        createMenu();
+        createMainMenu();
+        createRetryMenu();
+        createNextLevelMenu();
+        createPauseMenu();
+        createGameMenu();
         main();
     }
 
@@ -115,42 +113,40 @@ var Engine = (function(global) {
         });
     }
 
-    function changeState(changedState) {
-        state = changedState;
-    }
-
-    /* Starts the game.
-     *
-     */
-    function startGame() {
-        for (var i = 0; i < allCharacters.length; i ++) {
-            if (allCharacters[i].isSelected) {
-                player.setupSprite(allCharacters[i].name);
-                break;
-            }
-        }
-        for (var j = 0; j < allDifficulties.length; j ++) {
-            if (allDifficulties[j].isSelected) {
-                player.initProperties(allDifficulties[j].difficultyValue);
-            }
-        }
-        player.initProperties('normal');
-        allObjects.forEach(function(object){
-            object.setupSprite();
-        });
-        reset();
-        lastTime = Date.now();
-    }
-
-    function createMenu() {
+    function createMainMenu() {
         var startButton = new Button(
             canvas.width / 2 - 100,
             canvas.height / 2 - 120,
             200, // width
             80, // height
             function() {
-                changeState('game');
-                startGame();
+                stateController.setState('game');
+                player.resetScore();
+                player.resetPos();
+                player.setGoalReachable(false);
+                for (var i = 0; i < allCharacters.length; i ++) {
+                    if (allCharacters[i].isSelected) {
+                        player.setupSprite(allCharacters[i].name);
+                        break;
+                    }
+                }
+                for (var j = 0; j < allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        randomizer.setDifficulty(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                randomizer.level = 1;
+                randomizer.randomize();
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+
+                lastTime = Date.now();
             },
             'START', {
                 'default': '#039BE5',
@@ -197,11 +193,167 @@ var Engine = (function(global) {
             allCharacters.push(selectableCharacter);
         }
 
-        allButtons.push(startButton);
+        allMenuScreenButtons.push(startButton);
 
         // select default character and difficulty
         _selectCharacter(characterList[0]);
         _selectDifficulty(difficultyList[0].toLowerCase());
+    }
+
+    function createRetryMenu() {
+        var retryButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                player.setGoalReachable(false);
+                player.resetScore();
+                randomizer.level = 1;
+                randomizer.randomize();
+                for (var j = 0; j < allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                stateController.setState('game');
+            },
+            'RETRY', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                player.setGoalReachable(false);
+                player.resetScore();
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allRetryScreenButtons.push(retryButton);
+        allRetryScreenButtons.push(backToMainButton);
+    }
+
+    function createNextLevelMenu() {
+        var nextLevelButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                randomizer.randomize();
+                player.resetPos();
+                player.setGoalReachable(false);
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                randomizer.level += 1;
+                stateController.setState('game');
+            },
+            'NEXT LEVEL', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                for (var j = 0; j < allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                player.setGoalReachable(false);
+                player.resetScore();
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allNextLevelScreenButtons.push(nextLevelButton);
+        allNextLevelScreenButtons.push(backToMainButton);
+    }
+
+    function createPauseMenu() {
+        var resumeButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('game');
+            },
+            'RESUME', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                for (var j = 0; j < allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        allPauseScreenButtons.push(resumeButton);
+        allPauseScreenButtons.push(backToMainButton);
+    }
+
+    function createGameMenu() {
+        var pauseButton = new Button(
+            canvas.width - 155,
+            5,
+            150, // width
+            40, // height
+            function() {
+                stateController.setState('pause');
+            },
+            'PAUSE', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allGameScreenButtons.push(pauseButton);
     }
 
     function _selectCharacter(name) {
@@ -226,8 +378,8 @@ var Engine = (function(global) {
         });
     }
 
-    function updateMenu() {
-        allButtons.forEach(function(button) {
+    function updateMainMenu() {
+        allMenuScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
         });
         allDifficulties.forEach(function(difficulty) {
@@ -238,7 +390,7 @@ var Engine = (function(global) {
         });
     }
 
-    function renderMenu() {
+    function renderMainMenu() {
         ctx.fillStyle = '#43a047';
         ctx.fillRect(0, 0, 808, 909);
         ctx.textAlign = 'center';
@@ -252,7 +404,7 @@ var Engine = (function(global) {
 
         ctx.fillText('Character: ', 40, canvas.height / 2 + 250);
 
-        allButtons.forEach(function(button) {
+        allMenuScreenButtons.forEach(function(button) {
             button.render();
         });
         allDifficulties.forEach(function(difficulty) {
@@ -263,7 +415,60 @@ var Engine = (function(global) {
         });
     }
 
-    function update(dt) {
+    function updateRetryMenu() {
+        allRetryScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    function renderRetryMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.font = '48pt Avenir';
+        ctx.fillText('Your score: ' + player.getScore(), canvas.width / 2, 200);
+
+
+        allRetryScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    function updateNextLevelMenu() {
+        allNextLevelScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    function renderNextLevelMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 200, 600, 400);
+
+        allNextLevelScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    function updatePauseMenu() {
+        allPauseScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    function renderPauseMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
+
+        allPauseScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    function updateGame(dt) {
+        allGameScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
         updateEntities(dt);
         checkEnemyCollisions();
         checkPickableCollisions();
@@ -287,7 +492,8 @@ var Engine = (function(global) {
         ctx.fillStyle = 'black';
         ctx.clearRect(0,0,canvas.width,50);
         ctx.fillText('Lives: ' + player.lives, 0, 40);
-        ctx.fillText('Score: ' + player.score, canvas.width / 2, 40);
+        ctx.fillText('Score: ' + player.getScore(), canvas.width / 2, 40);
+        ctx.fillText('Level: ' + randomizer.level, canvas.width / 2 - 200, 40);
     }
 
     function checkEnemyCollisions() {
@@ -307,7 +513,7 @@ var Engine = (function(global) {
 
     function checkPickableCollisions() {
         // If player reaches water then they win
-        if (player.y <= 0 && player.isGoalReachable) {
+        if (player.y <= 0 && player.getGoalReachable()) {
             isGameOver = true;
         }
         allObjects.forEach(function(object){
@@ -322,7 +528,7 @@ var Engine = (function(global) {
         });
     }
 
-    function render() {
+    function renderGame() {
         /* This array holds the relative URL to the image used
          * for that particular row of the game level.
          */
@@ -342,23 +548,15 @@ var Engine = (function(global) {
             numCols = 8,
             row, col;
 
-        /* Loop through the number of rows and columns we've defined above
-         * and, using the rowImages array, render the correct image for that
-         * portion of the "grid"
-         */
         for (row = 0; row < numRows; row++) {
             for (col = 0; col < numCols; col++) {
-                /* The drawImage function of the canvas' context element
-                 * requires 3 parameters: the image to render, the x coordinate
-                 * to start rendering and the y coordinate to start rendering.
-                 * We're using our Resources helpers to refer to our images
-                 * so that we get the benefits of caching these images, since
-                 * we're using them over and over.
-                 */
                 ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
             }
         }
 
+        allGameScreenButtons.forEach(function(button) {
+            button.render();
+        })
 
         renderEntities();
     }
@@ -375,10 +573,6 @@ var Engine = (function(global) {
         });
 
         player.render();
-    }
-
-    function reset() {
-        // noop
     }
 
     Resources.load([
