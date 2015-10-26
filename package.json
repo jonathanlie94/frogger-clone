@@ -1,0 +1,12 @@
+{
+  "name": "frontend-nanodegree-arcade-game",
+  "version": "1.0.0",
+  "description": "Frogger Arcade Game Clone on browser",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanlie94/frontend-nanodegree-arcade-game.git"
+  },
+  "author": "Jonathan Lie",
+  "license": "ISC",
+  "homepage": "https://github.com/jonathanlie94/frontend-nanodegree-arcade-game#readme"
+}

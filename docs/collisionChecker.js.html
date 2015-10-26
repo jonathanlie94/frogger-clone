@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: collisionChecker.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: collisionChecker.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+/** @namespace collisionChecker */
+(function() {
+    /**
+     * @description This is a private function which s used by boxCollides() to check whether the
+     * bounding boxes of two entities collide or not.
+     * @memberof collisionChecker
+     * @param {integer} x - Starting x coordinate of the first entity's bounding box.
+     * @param {integer} y - Starting y coordinate of the first entity's bounding box.
+     * @param {integer} r - Ending x coordinate of the first entity's bounding box.
+     * @param {integer} b - Ending y coordinate of the first entity's bounding box.
+     * @param {integer} x2 - Starting x coordinate of the second entity's bounding box.
+     * @param {integer} y2 - Starting y coordinate of the second entity's bounding box.
+     * @param {integer} r2 - Ending x coordinate of the second entity's bounding box.
+     * @param {integer} b2 - Ending y coordinate of the second entity's bounding box.
+     * @return {boolean} - Whether the bounding boxes collide.
+     */
+    function _rectCollides(x, y, r, b, x2, y2, r2, b2) {
+        return !(r &lt;= x2 || x > r2 ||
+                 b &lt;= y2 || y > b2);
+    }
+
+    /**
+     * @description This function returns whether the bounding boxes of two images
+     * collide with each other. This function uses _rectCollides() for calculation.
+     * @memberof collisionChecker
+     * @param {array} pos - Starting positions of the first entity's bounding box. First member of
+     * the array is the x coordinate, and the second member is the y coordinate.
+     * @param {array} size - Size of the first entity's bounding box. First member of the array
+     * is the length, and the second member is the width.
+     * @param {array} pos - Starting positions of the second entity's bounding box. First member of
+     * the array is the x coordinate, and the second member is the y coordinate.
+     * @param {array} size - Size of the second entity's bounding box. First member of the array
+     * is the length, and the second member is the width.
+     * @return {boolean} - Whether the bounding boxes collide.
+     */
+    function boxCollides(pos, size, pos2, size2) {
+        return _rectCollides(pos[0], pos[1],
+                        pos[0] + size[0], pos[1] + size[1],
+                        pos2[0], pos2[1],
+                        pos2[0] + size2[0], pos2[1] + size2[1]);
+    }
+
+
+    /*
+     * @description This is a private function which returns an array containing
+     * alpha channel vlaues of the image data. It redraws the sprite of the unit
+     * on another canvas off-screen and gets the alpha channel of the imageData.
+     * @memberof collisionChecker
+     * @param {object} unit - Any of the objects of classes Player, Enemy, or any object
+     * which extends InGameObject.
+     * @param {minX} - Lower left x coordinate of the sprite.
+     * @param {maxY} - Lower left y coordinate of the sprite.
+     * @param {maxX} - Upper right x coordinate of the sprite.
+     * @param {minY} - Upper right y coordinate of the sprite.
+     * @return {array} - An array constaining alpha channel values of the image.
+     */
+    function _getCollisionMask(unit, minX, minY, maxX, maxY) {
+        var collisionMask = [];
+        // Create an off-screen canvas to redraw the image separately
+        var cvs = document.createElement('canvas');
+        cvs.width = 808;
+        cvs.height = 909;
+        var ctx = cvs.getContext('2d');
+        ctx.drawImage(Resources.get(unit.sprite), unit.x, unit.y);
+        var imageData = ctx.getImageData(minX, minY, maxX-minX, maxY-minY);
+
+        for (var i = 3; i &lt; imageData.data.length; i += 4) {
+            collisionMask.push(imageData.data[i]);
+        }
+
+        return collisionMask;
+    }
+
+    /**
+     * @description This function checks whether two entities collide with each other. This
+     * function is used to check whether the player came in contact with other
+     * entities such as gems and enemies.
+     * @memberof collisionChecker
+     * @param {object} entity1 - Any of the objects of classes Player, Enemy, or any object
+     * which extends InGameObject.
+     * @param {object} entity2 - Any of the objects of classes Player, Enemy, or any object
+     * which extends InGameObject.
+     * @return {boolean} - Whether the two entities collide.
+     */
+    function collidesWith(entity1, entity2) {
+        var alphaThreshold = 128; // ~50% opacity value
+
+        // Coordinates of the intersected rectangle
+        var entity1Pos = {
+            'x': Math.floor(entity1.x),
+            'y': Math.floor(entity1.y)
+        };
+        var entity2Pos = {
+            'x': Math.floor(entity2.x),
+            'y': Math.floor(entity2.y)
+        };
+
+        var minX = Math.max(entity1Pos.x, entity2Pos.x);
+        var minY = Math.min(entity1Pos.y, entity2Pos.y);
+        var maxX = Math.min(entity1Pos.x + entity1.spriteWidth,
+            entity2Pos.x + entity2.spriteWidth);
+        var maxY = Math.max(entity1Pos.y + entity1.spriteHeight,
+            entity2Pos.y + entity2.spriteHeight);
+
+        try {
+            var collisionMask1 = _getCollisionMask(entity1, minX, minY, maxX, maxY);
+            var collisionMask2 = _getCollisionMask(entity2, minX, minY, maxX, maxY);
+            for (var i = 0; i &lt; collisionMask1.length; i ++){
+                if (collisionMask1[i] >= alphaThreshold  &amp;&amp; collisionMask2[i] >= alphaThreshold) {
+                    return true;
+                }
+            }
+        }
+        catch (e) {
+            // do nothing
+        }
+        return false;
+    }
+
+    window.CollisionChecker = {
+        'collidesWith': collidesWith,
+        'boxCollides': boxCollides
+    };
+})();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Button.html">Button</a></li><li><a href="Character.html">Character</a></li><li><a href="DifficultyButton.html">DifficultyButton</a></li><li><a href="Enemy.html">Enemy</a></li><li><a href="GameRandomizer.html">GameRandomizer</a></li><li><a href="Gem.html">Gem</a></li><li><a href="Heart.html">Heart</a></li><li><a href="InGameObject.html">InGameObject</a></li><li><a href="Key.html">Key</a></li><li><a href="Player.html">Player</a></li><li><a href="Rock.html">Rock</a></li><li><a href="StateController.html">StateController</a></li><li><a href="UIComponent.html">UIComponent</a></li></ul><h3>Namespaces</h3><ul><li><a href="collisionChecker.html">collisionChecker</a></li><li><a href="Engine.html">Engine</a></li><li><a href="Resources.html">Resources</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.3</a> on Mon Oct 26 2015 21:38:43 GMT+0800 (SGT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

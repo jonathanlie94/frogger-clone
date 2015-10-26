@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: engine.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: engine.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @description Provides the game loop functionality (update entities and render),
+ * renders the initial game board on the screen, and then calls the update and
+ * render methods on all objects in the game.
+ * @namespace
+ */
+var Engine = (function(global) {
+    var doc = global.document,
+        win = global.window,
+        canvas = doc.createElement('canvas'),
+        ctx = canvas.getContext('2d'),
+        lastTime,
+        mousePressed = false,
+        mousePosition = {
+            x: 0,
+            y: 0
+        },
+        scalingFactor = 480.0 / 808.0; // actual display size
+
+    canvas.width = 808;
+    canvas.height = 909;
+    // to wrap the canvas around wrapper
+    win.onload = function() {
+        doc.getElementById("wrapper").appendChild(canvas);
+    };
+
+    /** Request Animation Polyfill */
+    var requestAnimFrame = (function(){
+        return  win.requestAnimationFrame       ||
+                win.webkitRequestAnimationFrame ||
+                win.mozRequestAnimationFrame    ||
+                win.oRequestAnimationFrame      ||
+                win.msRequestAnimationFrame     ||
+                function(callback, element){
+                    win.setTimeout(callback, 1000 / 60);
+                };
+    })();
+
+    /**
+     * @description This function serves as the kickoff point for the game loop itself
+     * and handles properly calling the update and render methods.
+     * @memberof Engine
+     */
+    function main() {
+        var now = Date.now(),
+            dt = (now - lastTime) / 1000.0;
+
+        var state = stateController.getState();
+        switch (state) {
+            case 'game':
+                updateGame(dt);
+                renderGame();
+                break;
+            case 'menu':
+                updateMainMenu();
+                renderMainMenu();
+                break;
+            case 'retry':
+                updateRetryMenu();
+                renderRetryMenu();
+                break;
+            case 'nextLevel':
+                updateNextLevelMenu();
+                renderNextLevelMenu();
+                break;
+            case 'pause':
+                updatePauseMenu();
+                renderPauseMenu();
+                break;
+        }
+
+        lastTime = now;
+        requestAnimFrame(main);
+
+        if (player.lives === 0) {
+            stateController.setState('retry');
+        }
+        if (player.y &lt;= 40 &amp;&amp; player.getGoalReachable()) {
+            stateController.setState('nextLevel');
+        }
+    }
+
+    /**
+     * @description Initial setup to create menu components and canvas events.
+     * @memberof Engine
+     */
+    function init() {
+        initCanvasEvents();
+        createMainMenu();
+        createRetryMenu();
+        createNextLevelMenu();
+        createPauseMenu();
+        createGameMenu();
+        main();
+    }
+
+    /**
+     * @description Initializes event listeners for the canvas to handle mouse input.
+     * @memberof Engine
+     */
+    function initCanvasEvents() {
+        canvas.addEventListener('mousemove', function(event) {
+            mousePosition.x = (event.offsetX / scalingFactor ||
+                event.layerX / scalingFactor);
+            mousePosition.y = (event.offsetY / scalingFactor ||
+                event.layerY / scalingFactor);
+        });
+
+        canvas.addEventListener('mousedown', function(event) {
+            mousePressed = true;
+        });
+        canvas.addEventListener('mouseup', function(event) {
+            mousePressed = false;
+        });
+    }
+
+    /**
+     * @description Creates the canvas components for the main menu screen.
+     * @memberof Engine
+     */
+    function createMainMenu() {
+        var i,j;
+
+        var startButton = new Button(
+            canvas.width / 2 - 100,
+            canvas.height / 2 - 120,
+            200, // width
+            80, // height
+            function() {
+                stateController.setState('game');
+                player.resetScore();
+                player.resetPos();
+                player.setGoalReachable(false);
+                for (i = 0; i &lt; allCharacters.length; i ++) {
+                    if (allCharacters[i].isSelected) {
+                        player.setupSprite(allCharacters[i].name);
+                        break;
+                    }
+                }
+                for (j = 0; j &lt; allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        randomizer.setDifficulty(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                randomizer.level = 1;
+                randomizer.randomize();
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+
+                lastTime = Date.now();
+            },
+            'START', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        // Difficulty buttons
+        for (i = 0, j = difficultyList.length - 1; i &lt; difficultyList.length; i++, j--) {
+            var difficultyValue = difficultyList[j];
+
+            var selectableDifficulty = new DifficultyButton(
+                canvas.width - ((i+1) * 175),
+                canvas.height / 2 + 80,
+                150,
+                80,
+                function() {
+                    _selectDifficulty(this.difficultyValue);
+                },
+                difficultyList[j].toUpperCase(), {
+                    'default': '#039BE5',
+                    'hover': '#0288D1',
+                    'active': '#0277BD'
+                },
+                difficultyList[j].toLowerCase());
+
+            allDifficulties.push(selectableDifficulty);
+        }
+
+        // Sprite selections
+        for (i = 0, j = characterList.length - 1; i &lt; characterList.length; i++, j--) {
+            var characterName = characterList[j];
+
+            var selectableCharacter = new Character(
+                canvas.width - ((i+1) * 101),
+                canvas.height / 2 + 200,
+                101,
+                117,
+                function() {
+                    _selectCharacter(this.name);
+                },
+                characterName);
+
+            allCharacters.push(selectableCharacter);
+        }
+
+        allMenuScreenButtons.push(startButton);
+
+        // select default character and difficulty
+        _selectCharacter(characterList[0]);
+        _selectDifficulty(difficultyList[0].toLowerCase());
+    }
+
+    /**
+     * @description Creates the canvas components for the retry menu screen.
+     * @memberof Engine
+     */
+    function createRetryMenu() {
+        var retryButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                player.setGoalReachable(false);
+                player.resetScore();
+                randomizer.level = 1;
+                randomizer.randomize();
+                for (var j = 0; j &lt; allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                stateController.setState('game');
+            },
+            'RETRY', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                player.setGoalReachable(false);
+                player.resetScore();
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allRetryScreenButtons.push(retryButton);
+        allRetryScreenButtons.push(backToMainButton);
+    }
+
+    /**
+     * @description Creates the canvas components for the next level menu screen.
+     * @memberof Engine
+     */
+    function createNextLevelMenu() {
+        var nextLevelButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                randomizer.randomize();
+                player.resetPos();
+                player.setGoalReachable(false);
+                allObjects.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                allEnemies.forEach(function(object){
+                    object.setupSpriteParam();
+                });
+                randomizer.level += 1;
+                stateController.setState('game');
+            },
+            'NEXT LEVEL', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                for (var j = 0; j &lt; allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+                player.setGoalReachable(false);
+                player.resetScore();
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allNextLevelScreenButtons.push(nextLevelButton);
+        allNextLevelScreenButtons.push(backToMainButton);
+    }
+
+    /**
+     * @description Creates the canvas components for the pause menu screen.
+     * @memberof Engine
+     */
+    function createPauseMenu() {
+        var resumeButton = new Button(
+            canvas.width / 2 - 200,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('game');
+            },
+            'RESUME', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        var backToMainButton = new Button(
+            canvas.width / 2 + 50,
+            canvas.height / 2 - 40,
+            150, // width
+            80, // height
+            function() {
+                stateController.setState('menu');
+                for (var j = 0; j &lt; allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
+            },
+            'MAIN MENU', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+
+        allPauseScreenButtons.push(resumeButton);
+        allPauseScreenButtons.push(backToMainButton);
+    }
+
+    /**
+     * @description Creates the canvas components for the in-game screen.
+     * @memberof Engine
+     */
+    function createGameMenu() {
+        var pauseButton = new Button(
+            canvas.width - 155,
+            5,
+            150, // width
+            40, // height
+            function() {
+                stateController.setState('pause');
+            },
+            'PAUSE', {
+                'default': '#039BE5',
+                'hover': '#0288D1',
+                'active': '#0277BD'
+            });
+        allGameScreenButtons.push(pauseButton);
+    }
+
+    /**
+     * @description A private function to select character to be used in game.
+     * @memberof Engine
+     */
+    function _selectCharacter(name) {
+        allCharacters.forEach(function(sprite){
+            sprite.name == name ? sprite.isSelected = true : sprite.isSelected = false;
+        });
+    }
+
+    /**
+     * @description A private function to select difficulty to be used by GameRandomizer to randomize
+     * objects in-game.
+     * @memberof Engine
+     */
+    function _selectDifficulty(difficultyValue) {
+        allDifficulties.forEach(function(difficulty){
+            difficulty.difficultyValue == difficultyValue ? difficulty.isSelected = true :
+                difficulty.isSelected = false;
+        });
+    }
+    /**
+     * @description Updates all UI components when the game is currently in main menu (in state 'menu').
+     * @memberof Engine
+     */
+    function updateMainMenu() {
+        allMenuScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+        allDifficulties.forEach(function(difficulty) {
+            difficulty.update(mousePosition, mousePressed);
+        });
+        allCharacters.forEach(function(sprite) {
+            sprite.update(mousePosition, mousePressed);
+        });
+    }
+
+    /**
+     * @description Renders all UI components on the canvas when the game is in main menu (in state 'menu').
+     * @memberof Engine
+     */
+    function renderMainMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(0, 0, 808, 909);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.font = '48pt Avenir';
+        ctx.fillText('Frogger Clone', canvas.width / 2, 200);
+
+        ctx.font = '36pt Avenir';
+        ctx.textAlign = 'start';
+        ctx.fillText('Difficulty: ', 40, canvas.height / 2 + 120);
+
+        ctx.fillText('Character: ', 40, canvas.height / 2 + 250);
+
+        allMenuScreenButtons.forEach(function(button) {
+            button.render();
+        });
+        allDifficulties.forEach(function(difficulty) {
+            difficulty.render();
+        });
+        allCharacters.forEach(function(sprite) {
+            sprite.render();
+        });
+    }
+
+    /**
+     * @description Updates all UI components when the game is currently in retry menu (in state 'retry').
+     * @memberof Engine
+     */
+    function updateRetryMenu() {
+        allRetryScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    /**
+     * @description Renders all UI components on the canvas when the game is in retry menu (in state 'retry').
+     * @memberof Engine
+     */
+    function renderRetryMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.font = '48pt Avenir';
+        ctx.fillText('Your Score: ' + player.getScore(), canvas.width / 2, 200);
+        ctx.fillText('Level: ' + randomizer.level, canvas.width / 2, 300);
+
+
+        allRetryScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    /**
+     * @description Updates all UI components when the game is currently in next level menu (in state 'nextLevel').
+     * @memberof Engine
+     */
+    function updateNextLevelMenu() {
+        allNextLevelScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    /**
+     * @description Renders all UI components on the canvas when the game is in next level menu (in state 'nextLevel').
+     * @memberof Engine
+     */
+    function renderNextLevelMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 200, 600, 400);
+
+        allNextLevelScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    /**
+     * @description Updates all UI components when the game is currently in pause menu (in state 'pause').
+     * @memberof Engine
+     */
+    function updatePauseMenu() {
+        allPauseScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+    }
+
+    /**
+     * @description Renders all UI components on the canvas when the game is in pause menu (in state 'pause').
+     * @memberof Engine
+     */
+    function renderPauseMenu() {
+        ctx.fillStyle = '#43a047';
+        ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
+
+        allPauseScreenButtons.forEach(function(button) {
+            button.render();
+        });
+    }
+
+    /**
+     * @description Updates all UI components, entities such as players, objects and enemies when
+     * the game is running (in state 'game').
+     * @memberof Engine
+     * @param {integer} dt - Time delta between ticks.
+     */
+    function updateGame(dt) {
+        allGameScreenButtons.forEach(function(button) {
+            button.update(mousePosition, mousePressed);
+        });
+        updateEntities(dt);
+        checkEnemyCollisions();
+        checkPickableCollisions();
+        updateStats();
+    }
+
+    /**
+     * @description A function used when updating the in-game screen to update all entities
+     * @memberof Engine
+     * @param {integer} dt - Time delta between ticks.
+     */
+    function updateEntities(dt) {
+        allEnemies.forEach(function(enemy) {
+            enemy.update(dt);
+        });
+        // There is no need to update the objects, as the function to update the object,
+        // which is handleCollision(), will only be called when the object actually
+        // collides with the player's sprite.
+        player.update();
+    }
+
+    /**
+     * @description Updates the score, level, and lives left on the top of the in-game screen.
+     * @memberof Engine
+     */
+    function updateStats() {
+        // Text attributes
+        ctx.font = '24pt roboto';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = 'black';
+        ctx.clearRect(0,0,canvas.width,50);
+        ctx.fillText('Lives: ' + player.lives, 0, 40);
+        ctx.fillText('Score: ' + player.getScore(), canvas.width / 2, 40);
+        ctx.fillText('Level: ' + randomizer.level, canvas.width / 2 - 200, 40);
+    }
+
+    /**
+     * @description Checks collisions between all enemy sprites and the player. If collision occurs,
+     * reduce player's life by 1 and reset their position.
+     * @memberof Engine
+     */
+    function checkEnemyCollisions() {
+        allEnemies.forEach(function(enemy) {
+            if (CollisionChecker.boxCollides([player.x, player.y],
+                [player.spriteWidth, player.spriteHeight],
+                [enemy.x, enemy.y],
+                [enemy.spriteWidth, enemy.spriteHeight]) &amp;&amp;
+                CollisionChecker.collidesWith(player, enemy)) {
+                player.lives --;
+                player.resetPos();
+                return;
+            }
+        });
+    }
+
+    /**
+     * @description Checks collisions between all object sprites and the player. If collision occurs,
+     * call the function handleCollision() of the object.
+     * @memberof Engine
+     */
+    function checkPickableCollisions() {
+        if (player.y &lt;= 0 &amp;&amp; player.getGoalReachable()) {
+            isGameOver = true;
+        }
+        allObjects.forEach(function(object){
+            if (object.isPickable &amp;&amp; CollisionChecker.boxCollides([player.x, player.y],
+                [player.spriteWidth, player.spriteHeight],
+                [object.x, object.y],
+                [object.spriteWidth, object.spriteHeight]) &amp;&amp;
+                CollisionChecker.collidesWith(player, object)){
+                object.handleCollision(player);
+            }
+        });
+    }
+
+    /**
+     * @description Renders all UI components, entities such as players, objects and enemies, map, when
+     * the game is running (in state 'game').
+     * @memberof Engine
+     */
+    function renderGame() {
+        // This array holds the relative URL to the image used
+        // for that particular row of the game level.
+        var rowImages = [
+                'images/water-block.png',   // Top row is water
+                'images/stone-block.png',   // Row 1 of 5 of stone
+                'images/stone-block.png',   // Row 2 of 5 of stone
+                'images/stone-block.png',   // Row 3 of 5 of stone
+                'images/stone-block.png',   // Row 4 of 5 of stone
+                'images/stone-block.png',   // Row 5 of 5 of stone
+                'images/grass-block.png',   // Row 1 of 4 of grass
+                'images/grass-block.png',   // Row 2 of 4 of grass
+                'images/grass-block.png',   // Row 3 of 4 of grass
+                'images/grass-block.png'    // Row 4 of 4 of grass
+            ],
+            numRows = 10,
+            numCols = 8,
+            row, col;
+
+        for (row = 0; row &lt; numRows; row++) {
+            for (col = 0; col &lt; numCols; col++) {
+                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+            }
+        }
+
+        allGameScreenButtons.forEach(function(button) {
+            button.render();
+        });
+
+        renderEntities();
+    }
+
+    /**
+     * @description Renders all enemies, players, and objects on the game when it is currently running (
+     * in state 'game').
+     * @memberof Engine
+     */
+    function renderEntities() {
+        // Loop through all of the objects within the allEnemies array and call
+        // the render function you have defined.
+        allEnemies.forEach(function(enemy) {
+            enemy.render();
+        });
+        allObjects.forEach(function(object) {
+            object.render();
+        });
+
+        player.render();
+    }
+
+    Resources.load([
+        'images/stone-block.png',
+        'images/water-block.png',
+        'images/grass-block.png',
+        'images/enemy-bug.png',
+        'images/char-boy.png',
+        'images/char-cat-girl.png',
+        'images/char-horn-girl.png',
+        'images/char-pink-girl.png',
+        'images/char-princess-girl.png',
+        'images/gem-blue.png',
+        'images/gem-orange.png',
+        'images/gem-green.png',
+        'images/heart.png',
+        'images/key.png',
+        'images/rock.png',
+        'images/selector.png'
+    ]);
+    Resources.onReady(init);
+
+    // Assign the canvas' context object to the global variable (the window
+    // object when run in a browser) so that developer's can use it more easily
+    // from within their app.js files.
+    global.ctx = ctx;
+})(this);
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Button.html">Button</a></li><li><a href="Character.html">Character</a></li><li><a href="DifficultyButton.html">DifficultyButton</a></li><li><a href="Enemy.html">Enemy</a></li><li><a href="GameRandomizer.html">GameRandomizer</a></li><li><a href="Gem.html">Gem</a></li><li><a href="Heart.html">Heart</a></li><li><a href="InGameObject.html">InGameObject</a></li><li><a href="Key.html">Key</a></li><li><a href="Player.html">Player</a></li><li><a href="Rock.html">Rock</a></li><li><a href="StateController.html">StateController</a></li><li><a href="UIComponent.html">UIComponent</a></li></ul><h3>Namespaces</h3><ul><li><a href="collisionChecker.html">collisionChecker</a></li><li><a href="Engine.html">Engine</a></li><li><a href="Resources.html">Resources</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.3</a> on Mon Oct 26 2015 21:38:43 GMT+0800 (SGT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

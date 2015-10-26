@@ -1,4 +1,7 @@
-// Singleton state controller for shared state
+/**
+ * @description Singleton state controller for shared state to be used by engine.
+ * @constructor
+ */
 var StateController = function() {
     if (StateController.prototype._singletonInstance) {
         return StateController.prototype._singletonInstance;
@@ -7,16 +10,35 @@ var StateController = function() {
     StateController.prototype._singletonInstance = this;
     var _state = 'menu';
 
+    /**
+     * @description Sets the state. Values are 'game', 'menu', 'retry', 'nextLevel', 'pause'.
+     * @memberof StateController
+     * @function
+     * @param {string} state - The state of the game to be set. Values are 'game', 'menu',
+     * 'retry', 'nextLevel', 'pause'.
+     */
     this.setState = function(state) {
         _state = state;
     };
 
+    /**
+     * @description Gets the current state of the game.
+     * @memberof StateController
+     * @return {string} The current state of the game. Values are 'game', 'menu', 'retry',
+     * 'nextLevel', 'pause'.
+     * @function
+     */
     this.getState = function() {
         return _state;
     };
 };
 
-// Enemies our player must avoid
+/**
+ * @description Enemy object that player sprite must avoid.
+ * @constructor
+ * @param {integer} row - The row which the enemy is spawning in.
+ * @param {integer} speed - The speed at which the enemy is running at.
+ */
 var Enemy = function(row, speed) {
     this.startingRow = row;
     this.speed = speed;
@@ -25,8 +47,12 @@ var Enemy = function(row, speed) {
     this.sprite = 'images/enemy-bug.png';
 };
 
-// Update the enemy's position, required method for game
-// Parameter: dt, a time delta between ticks
+/**
+ * @description Updates the position of the Enemy object.
+ * @memberof Enemy
+ * @function
+ * @param {integer} dt - Time delta between ticks.
+ */
 Enemy.prototype.update = function(dt) {
     if (this.x > ctx.canvas.width) {
         // reset its position
@@ -36,21 +62,30 @@ Enemy.prototype.update = function(dt) {
     this.x += dt * this.speed;
 };
 
-// Draw the enemy on the screen, required method for game
+/**
+ * @description Renders the Enemy object on the canvas.
+ * @memberof Enemy
+ * @function
+ */
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
+/**
+ * @description Sets up parameters for sprite of Enemy object, notably height and width.
+ * @memberof Enemy
+ * @function
+ */
 Enemy.prototype.setupSpriteParam = function() {
     var enemyImg = Resources.get(this.sprite);
     this.spriteHeight = enemyImg.height;
     this.spriteWidth = enemyImg.width;
 };
 
-
-// Now write your own player class
-// This class requires an update(), render() and
-// a handleInput() method.
+/**
+ * @description Player object that will render the sprite that the player controls.
+ * @constructor
+ */
 var Player = function() {
     if (Player.prototype._singletonInstance) {
         return Player.prototype._singletonInstance;
@@ -69,48 +104,84 @@ var Player = function() {
         'down': false
     };
 
+    /**
+     * @description Resets the player's score to 0.
+     * @memberof Player
+     * @function
+     */
     this.resetScore = function() {
         _score = 0;
     };
 
+    /**
+     * @description Gets the player's current score.
+     * @memberof Player
+     * @function
+     * @return {integer} - The player's current score.
+     */
     this.getScore = function() {
         return _score;
     };
 
+    /**
+     * @description Adds the player's current score.
+     * @memberof Player
+     * @function
+     * @param {integer} score - The score to be added.
+     */
     this.addScore = function(score) {
         _score += score;
     };
 
+    /**
+     * @description Returns a boolean indiciating whether the player can reach the goal.
+     * @memberof Player
+     * @function
+     * @return {boolean} isGoalReachable
+     */
     this.getGoalReachable = function() {
         return _isGoalReachable;
     };
 
+    /**
+     * @description Sets whether the player can reach the goal or not.
+     * @memberof Player
+     * @function
+     * @param {boolean} isGoalReachable
+     */
     this.setGoalReachable = function(isGoalReachable) {
         _isGoalReachable = isGoalReachable;
     };
 };
 
+/**
+ * @description Updates the player's position in the game.
+ * @memberof Player
+ * @function
+ */
 Player.prototype.update = function() {
-    if (this.keyStates.left && this.x >= 0
-        && !this.collidesWithBlockers('left')) {
+    if (this.keyStates.left && this.x >= 0 && !this.collidesWithBlockers('left')) {
         this.move('left');
     }
-    if (this.keyStates.up && this.y >= 0
-        && !this.collidesWithBlockers('up')) {
+    if (this.keyStates.up && this.y >= 0 && !this.collidesWithBlockers('up')) {
         this.move('up');
     }
-    if (this.keyStates.right &&
-        this.x < ctx.canvas.width - this.spriteWidth
-        && !this.collidesWithBlockers('right')) {
+    if (this.keyStates.right && this.x < ctx.canvas.width - this.spriteWidth &&
+        !this.collidesWithBlockers('right')) {
         this.move('right');
     }
-    if (this.keyStates.down &&
-        this.y < ctx.canvas.height - this.spriteHeight
-        && !this.collidesWithBlockers('down')) {
+    if (this.keyStates.down && this.y < ctx.canvas.height - this.spriteHeight &&
+        !this.collidesWithBlockers('down')) {
         this.move('down');
     }
 };
 
+/**
+ * @description Moves the player by its movement speed.
+ * @memberof Player
+ * @function
+ * @param {string} direction - Any one of these values: 'left', 'right', 'up', 'down'.
+ */
 Player.prototype.move = function(direction) {
     switch(direction) {
         case 'left':
@@ -128,7 +199,12 @@ Player.prototype.move = function(direction) {
     }
 };
 
-
+/**
+ * @description Sets up the sprite to be used as the player's character.
+ * @memberof Player
+ * @function
+ * @param {string} spriteName - the name of png used.
+ */
 Player.prototype.setupSprite = function(spriteName) {
     this.sprite = 'images/' + spriteName + '.png';
     var playerImg = Resources.get(this.sprite);
@@ -136,8 +212,12 @@ Player.prototype.setupSprite = function(spriteName) {
     this.spriteWidth = playerImg.width;
 };
 
-/* This function determines whether the player will collide if
- * it moves to the direction passed in the parameter.
+/**
+ * @description Determines whether the player will collide if it moves to the
+ * direction passed in the parameter.
+ * @memberof Player
+ * @function
+ * @param {string} direction - Any of these values: 'left', 'right' ,'up', 'down'.
  */
 Player.prototype.collidesWithBlockers = function(direction) {
     var _this = this;
@@ -177,15 +257,31 @@ Player.prototype.collidesWithBlockers = function(direction) {
     return ret;
 };
 
+/**
+ * @description Renders the player's sprite on the canvas.
+ * @memberof Player
+ * @function
+ */
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
+/**
+ * @description Resets player's position to the starting position.
+ * @memberof Player
+ * @function
+ */
 Player.prototype.resetPos = function() {
     this.x = 4 * 101;
     this.y = 8 * 83;
 };
 
+/**
+ * @description Initializes the player's lives and movement speed according to difficulty.
+ * @memberof Player
+ * @function
+ * @param {string} difficulty - Any of these values: 'easy', ' normal', 'hard'.
+ */
 Player.prototype.initProperties = function(difficulty) {
     switch (difficulty) {
         case 'easy':
@@ -203,17 +299,27 @@ Player.prototype.initProperties = function(difficulty) {
     }
 };
 
+/**
+ * @description Handles input of the keyboard's arrow keys.
+ * @memberof Player
+ * @function
+ * @param {string} eventType - The type of the event, 'keyup' or 'keydown'.
+ * @param {integer} keyCode
+ */
 Player.prototype.handleInput = function(eventType, keyCode) {
     if (eventType === 'keydown') {
         this.keyStates[keyCode] = true;
-
     }
     else if (eventType === 'keyup') {
         this.keyStates[keyCode] = false;
     }
 };
 
-/* A superclass for all in-game objects such as gems, keys.
+/**
+ * @description Superclass of all in game objects other than players and enemies.
+ * @constructor
+ * @param {integer} column - The column in which the object is located on the map.
+ * @param {integer} row - The row in which the object is located on the map.
  */
 var InGameObject = function(column, row) {
     this.visible = true;
@@ -236,9 +342,14 @@ InGameObject.prototype.setupSpriteParam = function() {
     this.spriteWidth = spriteImg.width;
 };
 
-/* Gems give player extra score when picked up.
- * colorNum: 1=blue, 2=orange, 3=green
- * Blue: 5000, Orange: 2000, Green: 500
+/**
+ * @description Gems give player scores when picked up.
+ * @extends InGameObject
+ * @constructor
+ * @param {integer} column - The column in which the object is located on the map.
+ * @param {integer} row - The row in which the object is located on the map.
+ * @param {integer} colorNum - The color number determines the score given. 1: blue,
+ * 5000, 2: orange, 2000, 3: green, 500
  */
 var Gem = function(column, row, colorNum) {
     InGameObject.call(this, column, row);
@@ -253,6 +364,12 @@ var Gem = function(column, row, colorNum) {
 Gem.prototype = Object.create(InGameObject.prototype);
 Gem.prototype.constructor = Gem;
 
+/**
+ * @description Handles collision between player and the gem.
+ * @memberof Gem
+ * @function
+ * @param {object} player - See the class Player.
+ */
 Gem.prototype.handleCollision = function(player) {
     this.visible = false;
     player.addScore(this.score);
@@ -260,9 +377,14 @@ Gem.prototype.handleCollision = function(player) {
     if (index > -1) {
         allObjects.splice(index, 1);
     }
-}
+};
 
-/* Keys must be picked up before players can proceed to goal.
+/**
+ * @description Keys must be picked up before players can proceed to goal.
+ * @extends InGameObject
+ * @constructor
+ * @param {integer} column - The column in which the object is located on the map.
+ * @param {integer} row - The row in which the object is located on the map.
  */
 var Key = function(column, row) {
     InGameObject.call(this, column, row);
@@ -271,6 +393,12 @@ var Key = function(column, row) {
 Key.prototype = Object.create(InGameObject.prototype);
 Key.prototype.constructor = Key;
 
+/**
+ * @description Handles collision between player and the key.
+ * @memberof Key
+ * @function
+ * @param {object} player - See the class Player.
+ */
 Key.prototype.handleCollision = function(player) {
     this.visible = false;
     player.setGoalReachable(true);
@@ -280,25 +408,41 @@ Key.prototype.handleCollision = function(player) {
     }
 };
 
-/* Rocks are purely obstacles that player cannot pass through.
+/**
+ * @description Rocks are purely obstacles that player cannot pass through.
+ * @extends InGameObject
+ * @constructor
+ * @param {integer} column - The column in which the object is located on the map.
+ * @param {integer} row - The row in which the object is located on the map.
  */
 var Rock = function(column, row) {
     InGameObject.call(this, column, row);
     this.sprite = 'images/rock.png';
     this.isPickable = false;
-}
+};
 Rock.prototype = Object.create(InGameObject.prototype);
 Rock.prototype.constructor = Rock;
 
-/* Hearts give players extra lives when picked up.
+/**
+ * @description Hearts give players extra lives when picked up.
+ * @extends InGameObject
+ * @constructor
+ * @param {integer} column - The column in which the object is located on the map.
+ * @param {integer} row - The row in which the object is located on the map.
  */
 var Heart = function(column, row) {
     InGameObject.call(this, column, row);
     this.sprite = 'images/heart.png';
-}
+};
 Heart.prototype = Object.create(InGameObject.prototype);
 Heart.prototype.constructor = Heart;
 
+/**
+ * @description Handles collision between player and the heart.
+ * @memberof Heart
+ * @function
+ * @param {object} player - See the class Player.
+ */
 Heart.prototype.handleCollision = function(player) {
     this.visible = false;
     player.lives ++;
@@ -306,27 +450,45 @@ Heart.prototype.handleCollision = function(player) {
     if (index > -1) {
         allObjects.splice(index, 1);
     }
-}
+};
 
+/**
+ * @description A randomizer that randomizes the objects and enemies in the game depending on
+ * the difficulty.
+ * @constructor
+ */
 var GameRandomizer = function() {
     this.difficulty = 'easy';
     this.level = 1;
 };
 
+/**
+ * @description Sets the difficulty to be used by the randomizer to determine the parameters
+ * for randomizer.
+ * @memberof GameRandomizer
+ * @function
+ * @param {string} difficulty - Any of these values: 'easy', 'normal', 'hard'.
+ */
 GameRandomizer.prototype.setDifficulty = function(difficulty) {
     this.difficulty = difficulty;
 };
 
+/**
+ * @description Randomize the objects and enemies of the game.
+ * @memberof GameRandomizer
+ * @function
+ */
 GameRandomizer.prototype.randomize = function() {
     allEnemies.length = 0;
     allObjects.length = 0;
-    var enemyCount, heartCount, rockCount, gemCount;
+    var enemyCount, heartCount, rockCount, gemCount,
+        row, col, i, j;
     var colLength = 8;
     var rowLength = 10;
     var occupied = [];
-    for (var i = 0; i < colLength; i++) {
+    for (i = 0; i < colLength; i++) {
         occupied[i] = [];
-        for(var j = 0; j < rowLength; j++) {
+        for(j = 0; j < rowLength; j++) {
             occupied[i][j] = false;
         }
     }
@@ -358,16 +520,15 @@ GameRandomizer.prototype.randomize = function() {
     gemCount += this.level % 3;
 
     // Randomize enemies
-    for (var i = 0; i < enemyCount; i++) {
-        var row = Math.floor(Math.random() * 5) + 2;
+    for (i = 0; i < enemyCount; i++) {
+        row = Math.floor(Math.random() * 5) + 2;
         var speed = Math.random() * 350 + 50;
         var enemy = new Enemy(row, speed);
         allEnemies.push(enemy);
     }
 
     // Randomize hearts
-    for (var i = 0; i < heartCount; i++) {
-        var col, row;
+    for (i = 0; i < heartCount; i++) {
         do {
             col = Math.floor(Math.random() * 5) + 1;
             row = Math.floor(Math.random() * 5) + 2;
@@ -379,8 +540,7 @@ GameRandomizer.prototype.randomize = function() {
     }
 
     // Randomize rocks
-    for (var i = 0; i < rockCount; i++) {
-        var col, row;
+    for (i = 0; i < rockCount; i++) {
         do {
             col = Math.floor(Math.random() * 5) + 1;
             row = Math.floor(Math.random() * 5) + 2;
@@ -392,8 +552,7 @@ GameRandomizer.prototype.randomize = function() {
     }
 
     // Randomize gems
-    for (var i = 0; i < gemCount; i++) {
-        var col, row;
+    for (i = 0; i < gemCount; i++) {
         do {
             col = Math.floor(Math.random() * 5) + 1;
             row = Math.floor(Math.random() * 6) + 2;
@@ -406,7 +565,6 @@ GameRandomizer.prototype.randomize = function() {
     }
 
     // Randomize key
-    var col, row;
     do {
         col = Math.floor(Math.random() * 5) + 1;
         row = Math.floor(Math.random() * 5) + 2;
@@ -415,12 +573,7 @@ GameRandomizer.prototype.randomize = function() {
 
     var key = new Key(col, row);
     allObjects.push(key);
-}
-
-
-// Now instantiate your objects.
-// Place all enemy objects in an array called allEnemies
-// Place the player object in a variable called player
+};
 
 // These lists define the options to be displayed in the menu.
 // For character list, the corresponding image must also be laoded beforehand.

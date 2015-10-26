@@ -1,3 +1,12 @@
+/**
+ * @description Superclass for all canvas-based UI components used in the game.
+ * @constructor
+ * @param {integer} x - x position of the component in the canvas
+ * @param {integer} y - y position of the component in the canvas
+ * @param {integer} width - width of the component
+ * @param {integer} height - height of the component
+ * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ */
 var UIComponent = function(x, y, width, height, clickCB) {
 	this.x = x;
 	this.y = y;
@@ -8,8 +17,23 @@ var UIComponent = function(x, y, width, height, clickCB) {
 	this.isClicking = false;
 };
 
-UIComponent.prototype.update = function(mousePosition,
-	mousePressed) {
+/**
+ * This is the callback function called when the user clicks the component.
+ * @callback uiComponentCallback
+ */
+
+/**
+ * @description Updates the button colors depending on the state (hover, click, etc.).
+ * @memberof DifficultyButton
+ * @param {object} mousePosition - The current mouse position relative to the canvas.
+ *
+ * @param {integer} mousePosition.x - x coordinate of the mouse position relative to the canvas.
+ * @param {integer} mousePosition.y - y coordinate of the mouse position relative to the canvas.
+ *
+ * @param {boolean} mousePressed - Whether the mouse is currently pressed.
+ * @function
+ */
+UIComponent.prototype.update = function(mousePosition, mousePressed) {
 	if (mousePosition.x >= this.x &&
 		mousePosition.x <= this.x + this.width &&
 	    mousePosition.y >= this.y &&
@@ -36,22 +60,29 @@ UIComponent.prototype.update = function(mousePosition,
 };
 
 /**
-* A button with hover and active states.
-* @param {string}  text  - Text on the button.
-* @param {object}  colors - Default, hover, and active colors.
-*
-* @param {object} colors.default - Default colors.
-* @param {string} colors.default.top - Top default button color.
-* @param {string} colors.default.bottom - Bottom default button color.
-*
-* @param {object} colors.hover - Hover colors.
-* @param {string} colors.hover.top - Top hover button color.
-* @param {string} colors.hover.bottom - Bottom hover button color.
-*
-* @param {object} colors.active - Active colors.
-* @param {string} colors.active.top - Top active button color.
-* @param {string} colors.active.bottom - Bottom active button color.
-*/
+ * @description A button which is a UI component on the canvas.
+ * @extends UIComponent
+ * @constructor
+ * @param {integer} x - x position of the component in the canvas
+ * @param {integer} y - y position of the component in the canvas
+ * @param {integer} width - width of the component
+ * @param {integer} height - height of the component
+ * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {string} text  - Text on the button.
+ * @param {object} colors - Default, hover, and active colors.
+ *
+ * @param {object} colors.default - Default colors.
+ * @param {string} colors.default.top - Top default button color.
+ * @param {string} colors.default.bottom - Bottom default button color.
+ *
+ * @param {object} colors.hover - Hover colors.
+ * @param {string} colors.hover.top - Top hover button color.
+ * @param {string} colors.hover.bottom - Bottom hover button color.
+ *
+ * @param {object} colors.active - Active colors.
+ * @param {string} colors.active.top - Top active button color.
+ * @param {string} colors.active.bottom - Bottom active button color.
+ */
 var Button = function(x, y, width, height, clickCB, text, colors) {
 	UIComponent.call(this, x, y, width, height, clickCB);
 	this.text = text;
@@ -60,6 +91,11 @@ var Button = function(x, y, width, height, clickCB, text, colors) {
 Button.prototype = Object.create(UIComponent.prototype);
 Button.prototype.constructor = Button;
 
+/**
+ * @description Render function of Button to render on the canvas.
+ * @memberof Button
+ * @function
+ */
 Button.prototype.render = function() {
 
 	var colors = this.colors[this.state];
@@ -79,14 +115,45 @@ Button.prototype.render = function() {
 	ctx.fillText(this.text, x, y);
 };
 
+/**
+ * @description A button which is a UI component on the canvas.
+ * @extends Button
+ * @constructor
+ * @param {integer} x - x position of the component in the canvas
+ * @param {integer} y - y position of the component in the canvas
+ * @param {integer} width - width of the component
+ * @param {integer} height - height of the component
+ * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {string} text  - Text on the button.
+ * @param {object} colors - Default, hover, and active colors.
+ *
+ * @param {object} colors.default - Default colors.
+ * @param {string} colors.default.top - Top default button color.
+ * @param {string} colors.default.bottom - Bottom default button color.
+ *
+ * @param {object} colors.hover - Hover colors.
+ * @param {string} colors.hover.top - Top hover button color.
+ * @param {string} colors.hover.bottom - Bottom hover button color.
+ *
+ * @param {object} colors.active - Active colors.
+ * @param {string} colors.active.top - Top active button color.
+ * @param {string} colors.active.bottom - Bottom active button color.
+ *
+ * @param {string} difficultyValue - The difficulty which is currently selected.
+ */
 var DifficultyButton = function(x, y, width, height, clickCB, text, colors, difficultyValue) {
 	Button.call(this, x, y, width, height, clickCB, text, colors);
 	this.isSelected = false;
 	this.difficultyValue = difficultyValue;
-}
+};
 DifficultyButton.prototype = Object.create(Button.prototype);
 DifficultyButton.prototype.constructor = DifficultyButton;
 
+/**
+ * @description Render function of DifficultyButton to render on the canvas.
+ * @memberof DifficultyButton
+ * @function
+ */
 DifficultyButton.prototype.render = function() {
 	Button.prototype.render.call(this);
 	if (this.isSelected) {
@@ -94,8 +161,19 @@ DifficultyButton.prototype.render = function() {
 		ctx.lineWidth = '2';
 		ctx.strokeRect(this.x, this.y, this.width, this.height);
 	}
-}
+};
 
+/**
+ * @description UI Component for character selection.
+ * @extends UIComponent
+ * @constructor
+ * @param {integer} x - x position of the component in the canvas
+ * @param {integer} y - y position of the component in the canvas
+ * @param {integer} width - width of the component
+ * @param {integer} height - height of the component
+ * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {string} sprite - The file name of the sprite used for the player's character.
+ */
 var Character = function(x, y, width, height, clickCB, sprite) {
 	UIComponent.call(this, x, y, width, height, clickCB);
 	this.sprite = "images/" + sprite + ".png";
@@ -105,6 +183,11 @@ var Character = function(x, y, width, height, clickCB, sprite) {
 Character.prototype = Object.create(UIComponent.prototype);
 Character.prototype.constructor = Character;
 
+/**
+ * @description Render function of Character to render on the canvas.
+ * @memberof Character
+ * @function
+ */
 Character.prototype.render = function() {
 	if (this.isSelected) {
 		ctx.drawImage(Resources.get('images/selector.png'),
@@ -119,6 +202,6 @@ Character.prototype.render = function() {
 	}
 
 	if (this.state == 'active') {
-		ctx.fillStyle = 'rgba(0, 255, 255, 0.1)'
+		ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
 	}
-}
+};

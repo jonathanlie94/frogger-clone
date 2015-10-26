@@ -1,17 +1,21 @@
-/* Resources.js
- * This is simple an image loading utility. It eases the process of loading
+/**
+ * @description A simple image loading utility. It eases the process of loading
  * image files so that they can be used within your game. It also includes
  * a simple "caching" layer so it will reuse cached images if you attempt
  * to load the same image multiple times.
+ * @namespace Resources
  */
 (function() {
     var resourceCache = {};
     var loading = [];
     var readyCallbacks = [];
 
-    /* This is the publicly accessible image loading function. It accepts
+    /**
+     * @description A publicly accessible image loading function. It accepts
      * an array of strings pointing to image files or a string for a single
      * image. It will then call our private image loading function accordingly.
+     * @memberof Resources
+     * @param {array|string} urlOrArr - Array of images / string containing url of image
      */
     function load(urlOrArr) {
         if(urlOrArr instanceof Array) {
@@ -31,8 +35,11 @@
         }
     }
 
-    /* This is our private image loader function, it is
+    /**
+     * @description A private image loader function, and it is
      * called by the public image loader function.
+     * @memberof Resources
+     * @param {string} url - The url of the resource.
      */
     function _load(url) {
         if(resourceCache[url]) {
@@ -70,16 +77,22 @@
         }
     }
 
-    /* This is used by developer's to grab references to images they know
+    /**
+     * @description This is used by developer's to grab references to images they know
      * have been previously loaded. If an image is cached, this functions
      * the same as calling load() on that URL.
+     * @memberof Resources
+     * @param {string} url - The url of the resource.
+     * @return {object} - An image object from resourceCache.
      */
     function get(url) {
         return resourceCache[url];
     }
 
-    /* This function determines if all of the images that have been requested
+    /**
+     * @description Determines if all of the images that have been requested
      * for loading have in fact been completed loaded.
+     * @memberof Resources
      */
     function isReady() {
         var ready = true;
@@ -92,12 +105,22 @@
         return ready;
     }
 
-    /* This function will add a function to the callback stack that is called
+    /**
+     * @description Add a function to the callback stack that is called
      * when all requested images are properly loaded.
+     * @memberof Resources
+     * @param {funcCallback} func - The function that is passed on to the queue, which should
+     * be run after the resources have finished loading.
      */
     function onReady(func) {
         readyCallbacks.push(func);
     }
+
+    /**
+     * @description This is the function that is passed on to the queue of callback functions that
+     * should be run after resources are ready (finished loading).
+     * @callback funcCallback
+     */
 
     /* This object defines the publicly accessible functions available to
      * developers by creating a global Resources object.

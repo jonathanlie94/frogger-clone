@@ -1,14 +1,10 @@
-/* Engine.js
- * This file provides the game loop functionality (update entities and render),
+/**
+ * @description Provides the game loop functionality (update entities and render),
  * renders the initial game board on the screen, and then calls the update and
- * render methods on your player and enemy objects (defined in your app.js).
+ * render methods on all objects in the game.
+ * @namespace
  */
-
 var Engine = (function(global) {
-    /* Predefine the variables we'll be using within this scope,
-     * create the canvas element, grab the 2D context for that canvas
-     * set the canvas elements height/width and add it to the DOM.
-     */
     var doc = global.document,
         win = global.window,
         canvas = doc.createElement('canvas'),
@@ -19,17 +15,16 @@ var Engine = (function(global) {
             x: 0,
             y: 0
         },
-        scalingFactor = 480.0 / 808.0;
+        scalingFactor = 480.0 / 808.0; // actual display size
 
     canvas.width = 808;
     canvas.height = 909;
+    // to wrap the canvas around wrapper
     win.onload = function() {
         doc.getElementById("wrapper").appendChild(canvas);
     };
 
-    /**
-    * Request Animation Polyfill
-    */
+    /** Request Animation Polyfill */
     var requestAnimFrame = (function(){
         return  win.requestAnimationFrame       ||
                 win.webkitRequestAnimationFrame ||
@@ -41,8 +36,10 @@ var Engine = (function(global) {
                 };
     })();
 
-    /* This function serves as the kickoff point for the game loop itself
+    /**
+     * @description This function serves as the kickoff point for the game loop itself
      * and handles properly calling the update and render methods.
+     * @memberof Engine
      */
     function main() {
         var now = Date.now(),
@@ -75,7 +72,7 @@ var Engine = (function(global) {
         lastTime = now;
         requestAnimFrame(main);
 
-        if (player.lives == 0) {
+        if (player.lives === 0) {
             stateController.setState('retry');
         }
         if (player.y <= 40 && player.getGoalReachable()) {
@@ -83,9 +80,9 @@ var Engine = (function(global) {
         }
     }
 
-    /* This function does some initial setup that should only occur once,
-     * particularly setting the lastTime variable that is required for the
-     * game loop.
+    /**
+     * @description Initial setup to create menu components and canvas events.
+     * @memberof Engine
      */
     function init() {
         initCanvasEvents();
@@ -97,6 +94,10 @@ var Engine = (function(global) {
         main();
     }
 
+    /**
+     * @description Initializes event listeners for the canvas to handle mouse input.
+     * @memberof Engine
+     */
     function initCanvasEvents() {
         canvas.addEventListener('mousemove', function(event) {
             mousePosition.x = (event.offsetX / scalingFactor ||
@@ -113,7 +114,13 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Creates the canvas components for the main menu screen.
+     * @memberof Engine
+     */
     function createMainMenu() {
+        var i,j;
+
         var startButton = new Button(
             canvas.width / 2 - 100,
             canvas.height / 2 - 120,
@@ -124,13 +131,13 @@ var Engine = (function(global) {
                 player.resetScore();
                 player.resetPos();
                 player.setGoalReachable(false);
-                for (var i = 0; i < allCharacters.length; i ++) {
+                for (i = 0; i < allCharacters.length; i ++) {
                     if (allCharacters[i].isSelected) {
                         player.setupSprite(allCharacters[i].name);
                         break;
                     }
                 }
-                for (var j = 0; j < allDifficulties.length; j ++) {
+                for (j = 0; j < allDifficulties.length; j ++) {
                     if (allDifficulties[j].isSelected) {
                         player.initProperties(allDifficulties[j].difficultyValue);
                         randomizer.setDifficulty(allDifficulties[j].difficultyValue);
@@ -155,7 +162,7 @@ var Engine = (function(global) {
             });
 
         // Difficulty buttons
-        for (var i = 0, j = difficultyList.length - 1; i < difficultyList.length; i++, j--) {
+        for (i = 0, j = difficultyList.length - 1; i < difficultyList.length; i++, j--) {
             var difficultyValue = difficultyList[j];
 
             var selectableDifficulty = new DifficultyButton(
@@ -177,7 +184,7 @@ var Engine = (function(global) {
         }
 
         // Sprite selections
-        for (var i = 0, j = characterList.length - 1; i < characterList.length; i++, j--) {
+        for (i = 0, j = characterList.length - 1; i < characterList.length; i++, j--) {
             var characterName = characterList[j];
 
             var selectableCharacter = new Character(
@@ -200,6 +207,10 @@ var Engine = (function(global) {
         _selectDifficulty(difficultyList[0].toLowerCase());
     }
 
+    /**
+     * @description Creates the canvas components for the retry menu screen.
+     * @memberof Engine
+     */
     function createRetryMenu() {
         var retryButton = new Button(
             canvas.width / 2 - 200,
@@ -250,6 +261,10 @@ var Engine = (function(global) {
         allRetryScreenButtons.push(backToMainButton);
     }
 
+    /**
+     * @description Creates the canvas components for the next level menu screen.
+     * @memberof Engine
+     */
     function createNextLevelMenu() {
         var nextLevelButton = new Button(
             canvas.width / 2 - 200,
@@ -300,6 +315,10 @@ var Engine = (function(global) {
         allNextLevelScreenButtons.push(backToMainButton);
     }
 
+    /**
+     * @description Creates the canvas components for the pause menu screen.
+     * @memberof Engine
+     */
     function createPauseMenu() {
         var resumeButton = new Button(
             canvas.width / 2 - 200,
@@ -339,6 +358,10 @@ var Engine = (function(global) {
         allPauseScreenButtons.push(backToMainButton);
     }
 
+    /**
+     * @description Creates the canvas components for the in-game screen.
+     * @memberof Engine
+     */
     function createGameMenu() {
         var pauseButton = new Button(
             canvas.width - 155,
@@ -356,28 +379,31 @@ var Engine = (function(global) {
         allGameScreenButtons.push(pauseButton);
     }
 
+    /**
+     * @description A private function to select character to be used in game.
+     * @memberof Engine
+     */
     function _selectCharacter(name) {
         allCharacters.forEach(function(sprite){
-            if (sprite.name == name) {
-                sprite.isSelected = true;
-            }
-            else {
-                sprite.isSelected = false;
-            }
+            sprite.name == name ? sprite.isSelected = true : sprite.isSelected = false;
         });
     }
 
+    /**
+     * @description A private function to select difficulty to be used by GameRandomizer to randomize
+     * objects in-game.
+     * @memberof Engine
+     */
     function _selectDifficulty(difficultyValue) {
         allDifficulties.forEach(function(difficulty){
-            if (difficulty.difficultyValue == difficultyValue) {
-                difficulty.isSelected = true;
-            }
-            else {
+            difficulty.difficultyValue == difficultyValue ? difficulty.isSelected = true :
                 difficulty.isSelected = false;
-            }
         });
     }
-
+    /**
+     * @description Updates all UI components when the game is currently in main menu (in state 'menu').
+     * @memberof Engine
+     */
     function updateMainMenu() {
         allMenuScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
@@ -390,6 +416,10 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Renders all UI components on the canvas when the game is in main menu (in state 'menu').
+     * @memberof Engine
+     */
     function renderMainMenu() {
         ctx.fillStyle = '#43a047';
         ctx.fillRect(0, 0, 808, 909);
@@ -415,19 +445,28 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Updates all UI components when the game is currently in retry menu (in state 'retry').
+     * @memberof Engine
+     */
     function updateRetryMenu() {
         allRetryScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
         });
     }
 
+    /**
+     * @description Renders all UI components on the canvas when the game is in retry menu (in state 'retry').
+     * @memberof Engine
+     */
     function renderRetryMenu() {
         ctx.fillStyle = '#43a047';
         ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
         ctx.font = '48pt Avenir';
-        ctx.fillText('Your score: ' + player.getScore(), canvas.width / 2, 200);
+        ctx.fillText('Your Score: ' + player.getScore(), canvas.width / 2, 200);
+        ctx.fillText('Level: ' + randomizer.level, canvas.width / 2, 300);
 
 
         allRetryScreenButtons.forEach(function(button) {
@@ -435,12 +474,20 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Updates all UI components when the game is currently in next level menu (in state 'nextLevel').
+     * @memberof Engine
+     */
     function updateNextLevelMenu() {
         allNextLevelScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
         });
     }
 
+    /**
+     * @description Renders all UI components on the canvas when the game is in next level menu (in state 'nextLevel').
+     * @memberof Engine
+     */
     function renderNextLevelMenu() {
         ctx.fillStyle = '#43a047';
         ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 200, 600, 400);
@@ -450,12 +497,20 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Updates all UI components when the game is currently in pause menu (in state 'pause').
+     * @memberof Engine
+     */
     function updatePauseMenu() {
         allPauseScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
         });
     }
 
+    /**
+     * @description Renders all UI components on the canvas when the game is in pause menu (in state 'pause').
+     * @memberof Engine
+     */
     function renderPauseMenu() {
         ctx.fillStyle = '#43a047';
         ctx.fillRect(canvas.width / 2 - 300, canvas.height / 2 - 400, 600, 600);
@@ -465,6 +520,12 @@ var Engine = (function(global) {
         });
     }
 
+    /**
+     * @description Updates all UI components, entities such as players, objects and enemies when
+     * the game is running (in state 'game').
+     * @memberof Engine
+     * @param {integer} dt - Time delta between ticks.
+     */
     function updateGame(dt) {
         allGameScreenButtons.forEach(function(button) {
             button.update(mousePosition, mousePressed);
@@ -475,16 +536,25 @@ var Engine = (function(global) {
         updateStats();
     }
 
+    /**
+     * @description A function used when updating the in-game screen to update all entities
+     * @memberof Engine
+     * @param {integer} dt - Time delta between ticks.
+     */
     function updateEntities(dt) {
         allEnemies.forEach(function(enemy) {
             enemy.update(dt);
         });
-        //allObjects.forEach(function(object) {
-        //    object.update();
-        //});
-       player.update();
+        // There is no need to update the objects, as the function to update the object,
+        // which is handleCollision(), will only be called when the object actually
+        // collides with the player's sprite.
+        player.update();
     }
 
+    /**
+     * @description Updates the score, level, and lives left on the top of the in-game screen.
+     * @memberof Engine
+     */
     function updateStats() {
         // Text attributes
         ctx.font = '24pt roboto';
@@ -496,23 +566,31 @@ var Engine = (function(global) {
         ctx.fillText('Level: ' + randomizer.level, canvas.width / 2 - 200, 40);
     }
 
+    /**
+     * @description Checks collisions between all enemy sprites and the player. If collision occurs,
+     * reduce player's life by 1 and reset their position.
+     * @memberof Engine
+     */
     function checkEnemyCollisions() {
         allEnemies.forEach(function(enemy) {
             if (CollisionChecker.boxCollides([player.x, player.y],
                 [player.spriteWidth, player.spriteHeight],
                 [enemy.x, enemy.y],
-                [enemy.spriteWidth, enemy.spriteHeight])){
-                if (CollisionChecker.collidesWith(player, enemy)){
-                    player.lives --;
-                    player.resetPos();
-                    return;
-                }
+                [enemy.spriteWidth, enemy.spriteHeight]) &&
+                CollisionChecker.collidesWith(player, enemy)) {
+                player.lives --;
+                player.resetPos();
+                return;
             }
         });
     }
 
+    /**
+     * @description Checks collisions between all object sprites and the player. If collision occurs,
+     * call the function handleCollision() of the object.
+     * @memberof Engine
+     */
     function checkPickableCollisions() {
-        // If player reaches water then they win
         if (player.y <= 0 && player.getGoalReachable()) {
             isGameOver = true;
         }
@@ -520,18 +598,21 @@ var Engine = (function(global) {
             if (object.isPickable && CollisionChecker.boxCollides([player.x, player.y],
                 [player.spriteWidth, player.spriteHeight],
                 [object.x, object.y],
-                [object.spriteWidth, object.spriteHeight])){
-                if (CollisionChecker.collidesWith(player, object)){
-                    object.handleCollision(player);
-                }
+                [object.spriteWidth, object.spriteHeight]) &&
+                CollisionChecker.collidesWith(player, object)){
+                object.handleCollision(player);
             }
         });
     }
 
+    /**
+     * @description Renders all UI components, entities such as players, objects and enemies, map, when
+     * the game is running (in state 'game').
+     * @memberof Engine
+     */
     function renderGame() {
-        /* This array holds the relative URL to the image used
-         * for that particular row of the game level.
-         */
+        // This array holds the relative URL to the image used
+        // for that particular row of the game level.
         var rowImages = [
                 'images/water-block.png',   // Top row is water
                 'images/stone-block.png',   // Row 1 of 5 of stone
@@ -556,15 +637,19 @@ var Engine = (function(global) {
 
         allGameScreenButtons.forEach(function(button) {
             button.render();
-        })
+        });
 
         renderEntities();
     }
 
+    /**
+     * @description Renders all enemies, players, and objects on the game when it is currently running (
+     * in state 'game').
+     * @memberof Engine
+     */
     function renderEntities() {
-        /* Loop through all of the objects within the allEnemies array and call
-         * the render function you have defined.
-         */
+        // Loop through all of the objects within the allEnemies array and call
+        // the render function you have defined.
         allEnemies.forEach(function(enemy) {
             enemy.render();
         });
@@ -595,9 +680,8 @@ var Engine = (function(global) {
     ]);
     Resources.onReady(init);
 
-    /* Assign the canvas' context object to the global variable (the window
-     * object when run in a browser) so that developer's can use it more easily
-     * from within their app.js files.
-     */
+    // Assign the canvas' context object to the global variable (the window
+    // object when run in a browser) so that developer's can use it more easily
+    // from within their app.js files.
     global.ctx = ctx;
 })(this);
