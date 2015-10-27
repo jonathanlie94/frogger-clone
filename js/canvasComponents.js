@@ -5,7 +5,8 @@
  * @param {integer} y - y position of the component in the canvas
  * @param {integer} width - width of the component
  * @param {integer} height - height of the component
- * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {uiComponentCallback} clickCB - callback function called when user
+ * clicks on the component.
  */
 var UIComponent = function(x, y, width, height, clickCB) {
 	this.x = x;
@@ -67,7 +68,8 @@ UIComponent.prototype.update = function(mousePosition, mousePressed) {
  * @param {integer} y - y position of the component in the canvas
  * @param {integer} width - width of the component
  * @param {integer} height - height of the component
- * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {uiComponentCallback} clickCB - callback function called when
+ * user clicks on the component.
  * @param {string} text  - Text on the button.
  * @param {object} colors - Default, hover, and active colors.
  *
@@ -105,7 +107,7 @@ Button.prototype.render = function() {
 	ctx.fillRect(this.x, this.y, this.width, this.height);
 
 	// text
-	ctx.font = '16pt Avenir';
+	ctx.font = '15pt Lato';
 	ctx.fillStyle = '#FFF';
 	ctx.textAlign = 'start';
 	var size = ctx.measureText(this.text);
@@ -123,7 +125,8 @@ Button.prototype.render = function() {
  * @param {integer} y - y position of the component in the canvas
  * @param {integer} width - width of the component
  * @param {integer} height - height of the component
- * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
+ * @param {uiComponentCallback} clickCB - callback function called when
+ * user clicks on the component.
  * @param {string} text  - Text on the button.
  * @param {object} colors - Default, hover, and active colors.
  *
@@ -171,8 +174,10 @@ DifficultyButton.prototype.render = function() {
  * @param {integer} y - y position of the component in the canvas
  * @param {integer} width - width of the component
  * @param {integer} height - height of the component
- * @param {uiComponentCallback} clickCB - callback function called when user clicks on the component.
- * @param {string} sprite - The file name of the sprite used for the player's character.
+ * @param {uiComponentCallback} clickCB - callback function called when user
+ * clicks on the component.
+ * @param {string} sprite - The file name of the sprite used for the
+ * player's character.
  */
 var Character = function(x, y, width, height, clickCB, sprite) {
 	UIComponent.call(this, x, y, width, height, clickCB);

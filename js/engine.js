@@ -563,7 +563,7 @@ var Engine = (function(global) {
      */
     function updateStats() {
         // Text attributes
-        ctx.font = '24pt roboto';
+        ctx.font = '24pt Lato';
         ctx.lineWidth = 3;
         ctx.fillStyle = 'black';
         ctx.clearRect(0,0,canvas.width,50);
