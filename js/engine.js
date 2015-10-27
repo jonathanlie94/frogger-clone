@@ -431,10 +431,10 @@ var Engine = (function(global) {
         ctx.fillRect(0, 0, 808, 909);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
-        ctx.font = '48pt Avenir';
+        ctx.font = '48pt Lato';
         ctx.fillText('Frogger Clone', canvas.width / 2, 200);
 
-        ctx.font = '36pt Avenir';
+        ctx.font = '36pt Lato';
         ctx.textAlign = 'start';
         ctx.fillText('Difficulty: ', 40, canvas.height / 2 + 120);
 
