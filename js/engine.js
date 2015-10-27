@@ -251,6 +251,12 @@ var Engine = (function(global) {
                 stateController.setState('menu');
                 player.setGoalReachable(false);
                 player.resetScore();
+                for (var j = 0; j < allDifficulties.length; j ++) {
+                    if (allDifficulties[j].isSelected) {
+                        player.initProperties(allDifficulties[j].difficultyValue);
+                        break;
+                    }
+                }
             },
             'MAIN MENU', {
                 'default': '#039BE5',
