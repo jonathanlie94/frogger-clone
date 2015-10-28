@@ -558,7 +558,7 @@ GameRandomizer.prototype.randomize = function() {
             row = Math.floor(Math.random() * 6) + 2;
         } while (occupied[col - 1][row - 1]);
         occupied[col - 1][row - 1] = true;
-        var colorNum = Math.floor(Math.random() * 2 + 1);
+        var colorNum = Math.floor(Math.random() * 3 + 1);
 
         var gem = new Gem(col, row, colorNum);
         allObjects.push(gem);
