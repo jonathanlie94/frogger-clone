@@ -8,5 +8,8 @@
   },
   "author": "Jonathan Lie",
   "license": "ISC",
-  "homepage": "https://github.com/jonathanlie94/frontend-nanodegree-arcade-game#readme"
+  "homepage": "https://github.com/jonathanlie94/frontend-nanodegree-arcade-game#readme",
+  "dependencies": {
+    "express": "^4.15.3"
+  }
 }
