@@ -3,7 +3,11 @@ Frogger Clone
 
 Check out the game live [here](https://frogger-clone-v1.herokuapp.com/).
 
-PLEASE run this on a simple server, e.g. python -m SimpleHTTPServer, and access the game from there. This is important so that the canvas allows loading of some of the images for certain collision detection utilities, when detecting bounding boxes and pixel-perfect collisions between players and the enemies and other objects.
+Quick start:
+```
+npm install
+node server.js
+```
 
 Instructions on how to play the game:
 
